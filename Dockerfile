@@ -21,7 +21,7 @@ FROM alpine:latest
 #
 COPY --from=build /linked /opt/jdk/
 COPY --from=build /dc/server/target/dependency /opt/dc/lib/
-COPY --from=build /dc/server/target/data-collector-*.jar /opt/dc/server/
+COPY --from=build /dc/server/target/data-collector-*.jar /opt/dc/lib/
 
 ENV PATH=/opt/jdk/bin:$PATH
 
@@ -31,4 +31,4 @@ VOLUME ["/conf", "/certs", "/rawdata"]
 
 EXPOSE 9090
 
-CMD ["java", "--illegal-access=deny", "-cp", "/opt/dc/server/*:/opt/dc/lib/*", "no.ssb.dc.ske.freg.Server"]
+CMD ["java", "-p", "/opt/dc/lib", "-m", "no.ssb.dc.server/no.ssb.dc.server.Server"]
