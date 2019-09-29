@@ -69,6 +69,80 @@
         </dependency>
 
         <dependency>
+            <groupId>no.ssb.dc</groupId>
+            <artifactId>data-collector-core</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>no.ssb.dc</groupId>
+            <artifactId>data-collector-server-base</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>no.ssb.dc</groupId>
+            <artifactId>data-collector-content-store-rawdata-provider</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>no.ssb.rawdata</groupId>
+            <artifactId>rawdata-client-api</artifactId>
+            <version>0.19</version>
+        </dependency>
+
+        <dependency>
+            <groupId>no.ssb.rawdata</groupId>
+            <artifactId>rawdata-client-provider-postgres</artifactId>
+            <version>0.7</version>
+        </dependency>
+
+        <dependency>
+            <groupId>no.ssb.rawdata</groupId>
+            <artifactId>rawdata-client-provider-pulsar</artifactId>
+            <version>0.3</version>
+        </dependency>
+
+        <!--
+        <dependency>
+            <groupId>no.ssb.rawdata</groupId>
+            <artifactId>rawdata-client-provider-kafka</artifactId>
+            <version>0.2</version>
+        </dependency>
+        -->
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.mail</groupId>
+                    <artifactId>javax.mail</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>${testng.version}</version>

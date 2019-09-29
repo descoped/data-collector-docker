@@ -1,0 +1,29 @@
+FROM statisticsnorway/lds-server-base:latest as build
+
+#
+# Build DC Backend
+#
+RUN ["jlink", "--strip-debug", "--no-header-files", "--no-man-pages", "--compress=2", "--module-path", "/opt/jdk/jmods", "--output", "/linked",\
+ "--add-modules", "jdk.unsupported,java.base,java.management,java.net.http,java.xml,java.naming,java.sql,java.desktop,java.security.jgss,java.instrument"]
+
+#
+# Build DC image
+#
+FROM alpine:latest
+
+#
+# Resources from build image
+#
+COPY --from=build /linked /opt/jdk/
+COPY target/dependency /opt/dc/lib/
+COPY target/data-collector-*.jar /opt/dc/server/
+
+ENV PATH=/opt/jdk/bin:$PATH
+
+WORKDIR /opt/dc
+
+VOLUME ["/conf", "/certs", "/rawdata"]
+
+EXPOSE 9090
+
+CMD ["java", "--illegal-access=deny", "-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:-UseJVMCICompiler", "-cp", "/opt/dc/server/*:/opt/dc/lib/*", "no.ssb.dc.ske.freg.Server"]
