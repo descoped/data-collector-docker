@@ -26,4 +26,6 @@ VOLUME ["/conf", "/certs", "/rawdata"]
 
 EXPOSE 9090
 
-CMD ["java", "--illegal-access=deny", "-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:-UseJVMCICompiler", "-cp", "/opt/dc/server/*:/opt/dc/lib/*", "no.ssb.dc.ske.freg.Server"]
+# "-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:-UseJVMCICompiler"
+
+CMD ["java", "--illegal-access=deny", "-cp", "/opt/dc/server/*:/opt/dc/lib/*", "no.ssb.dc.server.Server"]
