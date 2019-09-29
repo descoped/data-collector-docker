@@ -102,6 +102,12 @@
             <groupId>no.ssb.rawdata</groupId>
             <artifactId>rawdata-client-provider-pulsar</artifactId>
             <version>0.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.sun.activation</groupId>
+                    <artifactId>javax.activation</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!--

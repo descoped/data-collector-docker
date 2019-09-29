@@ -16,7 +16,7 @@ FROM alpine:latest
 #
 COPY --from=build /linked /opt/jdk/
 COPY target/dependency /opt/dc/lib/
-COPY target/data-collector-*.jar /opt/dc/server/
+COPY target/data-collector-*.jar /opt/dc/lib/
 
 ENV PATH=/opt/jdk/bin:$PATH
 
@@ -28,4 +28,4 @@ EXPOSE 9090
 
 # "-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:-UseJVMCICompiler"
 
-CMD ["java", "--illegal-access=deny", "-cp", "/opt/dc/server/*:/opt/dc/lib/*", "no.ssb.dc.server.Server"]
+CMD ["java", "-p", "/opt/dc/lib", "-m", "no.ssb.dc.server/no.ssb.dc.server.Server"]
