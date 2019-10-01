@@ -76,6 +76,12 @@
 
         <dependency>
             <groupId>no.ssb.dc</groupId>
+            <artifactId>data-collector-javascript-processor</artifactId>
+            <version>0.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>no.ssb.dc</groupId>
             <artifactId>data-collector-server-base</artifactId>
             <version>0.1-SNAPSHOT</version>
         </dependency>

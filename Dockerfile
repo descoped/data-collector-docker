@@ -4,7 +4,7 @@ FROM statisticsnorway/lds-server-base:latest as build
 # Build DataCollector Backend
 #
 RUN ["jlink", "--strip-debug", "--no-header-files", "--no-man-pages", "--compress=2", "--module-path", "/opt/jdk/jmods", "--output", "/linked",\
- "--add-modules", "jdk.unsupported,java.base,java.management,java.net.http,java.xml,java.naming,java.sql,java.desktop,java.security.jgss,java.instrument"]
+ "--add-modules", "jdk.unsupported,java.base,java.management,java.net.http,java.xml,java.naming,java.sql,java.desktop,java.security.jgss,java.instrument,jdk.internal.vm.compiler"]
 COPY pom.xml /dc/server/
 WORKDIR /dc/server
 RUN mvn -B verify dependency:go-offline
@@ -31,4 +31,4 @@ VOLUME ["/conf", "/certs", "/rawdata"]
 
 EXPOSE 9090
 
-CMD ["java", "-p", "/opt/dc/lib", "-m", "no.ssb.dc.server/no.ssb.dc.server.Server"]
+CMD ["java", "-XX:+UnlockExperimentalVMOptions", "-XX:+EnableJVMCI", "-p", "/opt/dc/lib", "-m", "no.ssb.dc.server/no.ssb.dc.server.Server"]
