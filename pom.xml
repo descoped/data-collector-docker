@@ -4,12 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>no.ssb.dc</groupId>
-    <artifactId>data-collector-server</artifactId>
+    <artifactId>data-collector-docker</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Data Collector Server</name>
-    <description>Data Collector Server</description>
+    <name>Data Collector Docker</name>
+    <description>Data Collector Docker</description>
     <url>https://github.com/statisticsnorway/</url>
     <inceptionYear>2019</inceptionYear>
 
@@ -49,8 +49,8 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/statisticsnorway/data-collector-server.git</connection>
-        <developerConnection>scm:git:git@github.com:statisticsnorway/data-collector-server.git</developerConnection>
+        <connection>scm:git:git://github.com/statisticsnorway/data-collector-docker.git</connection>
+        <developerConnection>scm:git:git@github.com:statisticsnorway/data-collector-docker.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
