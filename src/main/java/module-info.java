@@ -9,7 +9,7 @@ module no.ssb.dc.server {
     requires no.ssb.rawdata.api;
     requires no.ssb.rawdata.postgres;
     requires no.ssb.rawdata.pulsar;
-    //requires no.ssb.rawdata.kafka;
+    requires no.ssb.rawdata.kafka;
 
     requires org.slf4j;
     requires io.github.classgraph;

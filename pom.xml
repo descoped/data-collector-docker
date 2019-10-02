@@ -88,7 +88,7 @@
 
         <dependency>
             <groupId>no.ssb.dc</groupId>
-            <artifactId>data-collector-content-store-rawdata-provider</artifactId>
+            <artifactId>data-collector-provider-content-store-rawdata</artifactId>
             <version>0.1-SNAPSHOT</version>
         </dependency>
 
@@ -116,13 +116,11 @@
             </exclusions>
         </dependency>
 
-        <!--
         <dependency>
             <groupId>no.ssb.rawdata</groupId>
             <artifactId>rawdata-client-provider-kafka</artifactId>
-            <version>0.2</version>
+            <version>0.3</version>
         </dependency>
-        -->
 
         <dependency>
             <groupId>org.slf4j</groupId>
