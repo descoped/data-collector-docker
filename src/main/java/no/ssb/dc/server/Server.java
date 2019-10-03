@@ -2,7 +2,7 @@ package no.ssb.dc.server;
 
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.config.StoreBasedDynamicConfiguration;
-import no.ssb.dc.api.application.Application;
+import no.ssb.dc.application.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
