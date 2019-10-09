@@ -106,18 +106,6 @@
 
         <dependency>
             <groupId>no.ssb.rawdata</groupId>
-            <artifactId>rawdata-client-provider-pulsar</artifactId>
-            <version>0.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.sun.activation</groupId>
-                    <artifactId>javax.activation</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>no.ssb.rawdata</groupId>
             <artifactId>rawdata-client-provider-kafka</artifactId>
             <version>0.3</version>
         </dependency>
@@ -153,9 +141,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-            <version>${testng.version}</version>
+            <groupId>no.ssb.dc</groupId>
+            <artifactId>data-collector-testutils</artifactId>
+            <version>0.1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

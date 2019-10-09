@@ -8,7 +8,6 @@ module no.ssb.dc.server {
     requires no.ssb.dc.content.rawdata;
     requires no.ssb.rawdata.api;
     requires no.ssb.rawdata.postgres;
-    requires no.ssb.rawdata.pulsar;
     requires no.ssb.rawdata.kafka;
 
     requires org.slf4j;
@@ -17,4 +16,6 @@ module no.ssb.dc.server {
     requires undertow.core;
 
     exports no.ssb.dc.server;
+    exports no.ssb.dc.server.controller;
+    exports no.ssb.dc.server.service;
 }
