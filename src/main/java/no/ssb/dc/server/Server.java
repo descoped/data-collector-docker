@@ -21,7 +21,7 @@ public class Server {
                 .propertiesResource("application-defaults.properties")
                 .propertiesResource("/conf/application-defaults.properties")
                 .propertiesResource("/conf/application.properties")
-                .propertiesResource("application-integration.properties")
+                //.propertiesResource("application-integration.properties")
                 .environment("DC_")
                 .systemProperties()
                 .build();
