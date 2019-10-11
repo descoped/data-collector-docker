@@ -5,6 +5,7 @@ import no.ssb.dc.api.context.ExecutionContext;
 import no.ssb.dc.api.node.builder.FlowBuilder;
 import no.ssb.dc.api.ulid.ULIDGenerator;
 import no.ssb.dc.api.ulid.ULIDStateHolder;
+import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.Service;
 import no.ssb.dc.core.executor.Worker;
 import org.slf4j.Logger;
@@ -38,6 +39,8 @@ public class WorkerService implements Service {
 
         if (configuration.evaluateToString("data.collector.certs.directory") != null) {
             workerBuilder.buildCertificateFactory(Paths.get(configuration.evaluateToString("data.collector.certs.directory")));
+        } else {
+            workerBuilder.buildCertificateFactory(CommonUtils.currentPath());
         }
 
         UUID jobId = ULIDGenerator.toUUID(ULIDGenerator.nextMonotonicUlid(ulidStateHolder));
