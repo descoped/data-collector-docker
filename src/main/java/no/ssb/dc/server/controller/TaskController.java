@@ -31,7 +31,6 @@ public class TaskController implements Controller {
         if ("put".equalsIgnoreCase(exchange.getRequestMethod().toString())) {
             exchange.getRequestReceiver().receiveFullBytes((httpServerExchange, bytes) -> {
                 String payload = new String(bytes, StandardCharsets.UTF_8);
-//                System.out.printf("payload:%n%s%n", payload);
                 FlowBuilder flowBuilder = Specification.deserialize(payload, FlowBuilder.class);
                 workerService.add(flowBuilder);
 
