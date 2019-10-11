@@ -2,7 +2,7 @@ package no.ssb.dc.server;
 
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.config.StoreBasedDynamicConfiguration;
-import no.ssb.dc.application.Application;
+import no.ssb.dc.application.UndertowApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,17 +15,17 @@ public class Server {
     public static void main(String[] args) {
         long now = System.currentTimeMillis();
 
-        LOG.info("WorkDir: {}", Paths.get("").toAbsolutePath().toString());
+        LOG.info("WorkDir: {}", Paths.get("").toAbsolutePath());
 
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
-                .propertiesResource(Application.getDefaultConfigurationResourcePath())
+                .propertiesResource("application-defaults.properties")
                 .propertiesResource("/conf/application-defaults.properties")
                 .propertiesResource("/conf/application.properties")
                 .environment("DC_")
                 .systemProperties()
                 .build();
 
-        Application application = Application.create(configuration);
+        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration);
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
