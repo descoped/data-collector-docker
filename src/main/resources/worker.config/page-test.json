@@ -1,0 +1,111 @@
+{
+  "type" : "Flow",
+  "flowName" : "paging",
+  "startNodeId" : "page-loop",
+  "configure" : [ {
+    "type" : "FlowContext",
+    "variables" : {
+      "baseURL" : "http://0.0.0.0:PORT",
+      "fromPosition" : "1"
+    },
+    "globalState" : {
+      "global.topic" : "topic"
+    },
+    "headers" : {
+      "accept" : [ "application/xml" ]
+    }
+  } ],
+  "functions" : {
+    "page-loop" : {
+      "type" : "Paginate",
+      "id" : "page-loop",
+      "variables" : {
+        "fromPosition" : "${nextPosition}"
+      },
+      "threshold" : 5,
+      "addPageContent" : true,
+      "iterate" : [ {
+        "type" : "Execute",
+        "executeId" : "page"
+      } ],
+      "until" : {
+        "type" : "ConditionWhenVariableIsNull",
+        "identifier" : "nextPosition"
+      }
+    },
+    "page" : {
+      "type" : "Get",
+      "id" : "page",
+      "url" : "${baseURL}/mock?seq=${fromPosition}&size=10",
+      "positionProducerClass" : "no.ssb.dc.server.ServerTest$LongPositionProducer",
+      "returnVariables" : [ "nextPosition" ],
+      "responseValidators" : [ {
+        "type" : "HttpStatusValidation",
+        "success" : [ 200, 201, 202, 203, 204, 205, 206 ],
+        "failed" : [ 300, 301, 302, 303, 304, 305, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 500, 501, 502, 503, 504, 505 ]
+      } ],
+      "pipes" : [ {
+        "type" : "Sequence",
+        "splitQuery" : {
+          "type" : "QueryXPath",
+          "expression" : "/feed/entry"
+        },
+        "expectedQuery" : {
+          "type" : "QueryXPath",
+          "expression" : "/entry/id"
+        }
+      }, {
+        "type" : "NextPage",
+        "outputs" : {
+          "nextPosition" : {
+            "type" : "QueryRegEx",
+            "expression" : "(?<=[?&]seq=)[^&]*",
+            "query" : {
+              "type" : "QueryXPath",
+              "expression" : "/feed/link[@rel=\"next\"]/@href"
+            }
+          }
+        }
+      }, {
+        "type" : "Parallel",
+        "variables" : {
+          "position" : {
+            "type" : "QueryXPath",
+            "expression" : "/entry/id"
+          }
+        },
+        "splitQuery" : {
+          "type" : "QueryXPath",
+          "expression" : "/feed/entry"
+        },
+        "pipes" : [ {
+          "type" : "AddContent",
+          "positionVariableExpression" : "${position}",
+          "contentKey" : "entry"
+        }, {
+          "type" : "Execute",
+          "executeId" : "event-doc",
+          "inputVariables" : {
+            "eventId" : {
+              "type" : "QueryXPath",
+              "expression" : "/entry/event/event-id"
+            }
+          }
+        }, {
+          "type" : "Publish",
+          "positionVariableExpression" : "${position}"
+        } ]
+      } ]
+    },
+    "event-doc" : {
+      "type" : "Get",
+      "id" : "event-doc",
+      "url" : "${baseURL}/mock/${eventId}?type=event",
+      "pipes" : [ {
+        "type" : "AddContent",
+        "positionVariableExpression" : "${position}",
+        "contentKey" : "event-doc"
+      } ]
+    }
+  }
+}
