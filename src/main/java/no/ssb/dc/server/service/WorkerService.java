@@ -10,6 +10,7 @@ import no.ssb.dc.core.executor.Worker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -28,14 +29,20 @@ public class WorkerService implements Service {
     }
 
     public void add(FlowBuilder flowBuilder) {
-        Worker worker = Worker.newBuilder()
+        Worker.WorkerBuilder workerBuilder = Worker.newBuilder()
                 .configuration(configuration.asMap())
+                .initialPositionVariable("startPosition")
+                .initialPosition("1")
                 .specification(flowBuilder)
-                .printConfiguration()
-                .build();
+                .printConfiguration();
+
+        if (configuration.evaluateToString("data.collector.certs.directory") != null) {
+            workerBuilder.buildCertificateFactory(Paths.get(configuration.evaluateToString("data.collector.certs.directory")));
+        }
+
         UUID jobId = ULIDGenerator.toUUID(ULIDGenerator.nextMonotonicUlid(ulidStateHolder));
         LOG.info("Start job: {}", jobId);
-        CompletableFuture<ExecutionContext> future = worker.runAsync();
+        CompletableFuture<ExecutionContext> future = workerBuilder.build().runAsync();
         future.thenAccept(context -> {
             LOG.info("Completed job: {}", jobId);
            jobs.remove(jobId);
