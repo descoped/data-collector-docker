@@ -21,7 +21,7 @@ public class WorkerService implements Service {
 
     private final ULIDStateHolder ulidStateHolder = new ULIDStateHolder();
     private final DynamicConfiguration configuration;
-    private final Map<UUID, CompletableFuture<ExecutionContext>> jobs = new ConcurrentHashMap<>();
+    private final Map<UUID, CompletableFuture<ExecutionContext>> jobs = new ConcurrentHashMap<>(); // todo make future housekeeping thread that removes crashed jobs
 
     public WorkerService(DynamicConfiguration configuration) {
         this.configuration = configuration;
