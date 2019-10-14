@@ -1,9 +1,9 @@
 {
-  "type" : "Flow",
-  "flowName" : "paging",
-  "startNodeId" : "page-loop",
+  "type" : "Specification",
+  "name" : "paging",
+  "startFunctionId" : "page-loop",
   "configure" : [ {
-    "type" : "FlowContext",
+    "type" : "SpecificationContext",
     "variables" : {
       "baseURL" : "http://0.0.0.0:PORT",
       "fromPosition" : "1"

@@ -2,7 +2,7 @@ package no.ssb.dc.server.controller;
 
 import io.undertow.server.HttpServerExchange;
 import no.ssb.dc.api.Specification;
-import no.ssb.dc.api.node.builder.FlowBuilder;
+import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.application.Controller;
 import no.ssb.dc.server.service.WorkerService;
 import org.slf4j.Logger;
@@ -32,8 +32,8 @@ public class TaskController implements Controller {
 
         if ("put".equalsIgnoreCase(exchange.getRequestMethod().toString())) {
             exchange.getRequestReceiver().receiveFullString((httpServerExchange, payload) -> {
-                FlowBuilder flowBuilder = Specification.deserialize(payload);
-                workerService.add(flowBuilder);
+                SpecificationBuilder specificationBuilder = Specification.deserialize(payload);
+                workerService.add(specificationBuilder);
 
             });
             exchange.setStatusCode(201);

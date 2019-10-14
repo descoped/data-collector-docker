@@ -2,7 +2,7 @@ package no.ssb.dc.server.service;
 
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.context.ExecutionContext;
-import no.ssb.dc.api.node.builder.FlowBuilder;
+import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.ulid.ULIDGenerator;
 import no.ssb.dc.api.ulid.ULIDStateHolder;
 import no.ssb.dc.api.util.CommonUtils;
@@ -29,12 +29,12 @@ public class WorkerService implements Service {
         this.configuration = configuration;
     }
 
-    public void add(FlowBuilder flowBuilder) {
+    public void add(SpecificationBuilder specificationBuilder) {
         Worker.WorkerBuilder workerBuilder = Worker.newBuilder()
                 .configuration(configuration.asMap())
                 .initialPositionVariable("startPosition")
                 .initialPosition("1")
-                .specification(flowBuilder)
+                .specification(specificationBuilder)
                 .printConfiguration();
 
         if (configuration.evaluateToString("data.collector.certs.directory") != null) {
