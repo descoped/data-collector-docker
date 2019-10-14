@@ -35,7 +35,8 @@ public class WorkerService implements Service {
                 .initialPositionVariable("startPosition")
                 .initialPosition("1")
                 .specification(specificationBuilder)
-                .printConfiguration();
+                .printConfiguration()
+                .printExecutionPlan();
 
         if (configuration.evaluateToString("data.collector.certs.directory") != null) {
             workerBuilder.buildCertificateFactory(Paths.get(configuration.evaluateToString("data.collector.certs.directory")));

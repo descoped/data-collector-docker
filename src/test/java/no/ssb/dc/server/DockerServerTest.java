@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 import javax.inject.Inject;
 
 @Listeners(TestServerListener.class)
-public class ServerTest {
+public class DockerServerTest {
 
     @Inject
     TestServer server;
