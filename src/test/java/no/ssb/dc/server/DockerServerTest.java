@@ -58,10 +58,9 @@ public class DockerServerTest {
     @Test
     public void ReadmeExample() {
         SpecificationBuilder feedBuilder = Specification.start("", "loop")
-                .configure(
-                        context()
-                                .topic("topic")
-                                .variable("nextPosition", "${contentStream.hasLastPosition() ? contentStream.lastPosition() : 1}")
+                .configure(context()
+                        .topic("topic")
+                        .variable("nextPosition", "${contentStream.hasLastPosition() ? contentStream.lastPosition() : 1}")
                 )
                 .function(paginate("loop")
                         .variable("fromPosition", "${nextPosition}")
