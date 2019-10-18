@@ -7,7 +7,6 @@ import no.ssb.dc.core.executor.Worker;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
 import no.ssb.dc.test.server.TestServerListener;
-import org.testng.annotations.Ignore;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
 
@@ -54,7 +53,7 @@ public class DockerServerTest {
         Thread.sleep(3000);
     }
 
-    @Ignore
+//    @Ignore
     @Test
     public void ReadmeExample() {
         SpecificationBuilder feedBuilder = Specification.start("", "loop")
@@ -93,6 +92,7 @@ public class DockerServerTest {
                 )
                 .specification(feedBuilder)
                 .printExecutionPlan()
+                .printConfiguration()
                 .build()
                 .run();
     }
