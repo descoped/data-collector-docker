@@ -55,8 +55,7 @@ public class WorkerServiceTest {
                                 .expected(xpath("/entry/id"))
                         )
                         .pipe(nextPage()
-                                        .output("nextPosition", regex(xpath("/feed/link[@rel=\"next\"]/@href"), "(?<=[?&]seq=)[^&]*"))
-                                //.output("nextPosition", eval(xpath("/feed/entry[last()]/id"), "result", "${cast.toLong(result) + 1}"))
+                                .output("nextPosition", regex(xpath("/feed/link[@rel=\"next\"]/@href"), "(?<=[?&]seq=)[^&]*"))
                         )
                         .pipe(parallel(xpath("/feed/entry"))
                                 .variable("position", xpath("/entry/id"))
@@ -72,7 +71,7 @@ public class WorkerServiceTest {
                         .url("${baseURL}/mock/${eventId}?type=event")
                         .pipe(addContent("${position}", "event-doc"))
                 );
-        ;
+
         workerService.add(specificationBuilder);
 
         workerService.start();
