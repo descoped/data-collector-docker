@@ -30,6 +30,37 @@ steps:
     depends_on:
       - build
 
+  - name: codecov-manual
+    image: alpine:3
+    commands:
+      - apk add --no-cache bash curl findutils git
+      - curl -s https://codecov.io/bash | bash
+    environment:
+      CODECOV_TOKEN:
+        from_secret: codecov_token
+    depends_on:
+      - test
+
+  - name: codecov-plugin
+    image: plugins/codecov
+    settings:
+      token:
+        from_secret: codecov_token
+    depends_on:
+      - test
+
+  - name: codacy
+    image: maven:3-jdk-11
+    commands:
+      - curl -Ls -o codacy-coverage-reporter "https://dl.bintray.com/codacy/Binaries/6.0.6/codacy-coverage-reporter-linux"
+      - chmod +x codacy-coverage-reporter
+      - ./codacy-coverage-reporter report -l Java -r target/site/jacoco/jacoco.xml
+    environment:
+      CODACY_PROJECT_TOKEN:
+        from_secret: codacy_token
+    depends_on:
+      - test
+
   - name: code-analysis
     image: aosapps/drone-sonar-plugin
     settings:
@@ -53,6 +84,9 @@ steps:
       M2_HOME: /drone/src/.m2
     depends_on:
       - code-analysis
+      - codacy
+      - codecov-plugin
+      - codecov-manual
 
   - name: slack
     image: plugins/slack
