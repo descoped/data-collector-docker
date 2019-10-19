@@ -1,5 +1,7 @@
 # Data Collector Server
 
+For more information about Data Collector, please refer to the [Data Collector documentation](https://github.com/statisticsnorway/data-collector-project).
+
 ## Build
 
 `mvn clean install`
