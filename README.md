@@ -1,5 +1,7 @@
 # Data Collector Server
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/fa233ed462d64bbe8093fe134d2175c9)](https://www.codacy.com/manual/oranheim/data-collector-docker?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=statisticsnorway/data-collector-docker&amp;utm_campaign=Badge_Grade)
+
 For more information about Data Collector, please refer to the [Data Collector documentation](https://github.com/statisticsnorway/data-collector-project).
 
 ## Build
