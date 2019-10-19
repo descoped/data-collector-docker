@@ -32,8 +32,6 @@ public class WorkerService implements Service {
     public void add(SpecificationBuilder specificationBuilder) {
         Worker.WorkerBuilder workerBuilder = Worker.newBuilder()
                 .configuration(configuration.asMap())
-                .initialPositionVariable("startPosition")
-                .initialPosition("1")
                 .specification(specificationBuilder)
                 .printConfiguration()
                 .printExecutionPlan();
