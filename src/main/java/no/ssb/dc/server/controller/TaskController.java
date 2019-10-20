@@ -2,11 +2,14 @@ package no.ssb.dc.server.controller;
 
 import io.undertow.server.HttpServerExchange;
 import no.ssb.dc.api.Specification;
+import no.ssb.dc.api.http.Request;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.application.Controller;
 import no.ssb.dc.server.service.WorkerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 public class TaskController implements Controller {
 
@@ -21,6 +24,11 @@ public class TaskController implements Controller {
     @Override
     public String contextPath() {
         return "/task";
+    }
+
+    @Override
+    public Set<Request.Method> allowedMethods() {
+        return Set.of(Request.Method.PUT);
     }
 
     @Override

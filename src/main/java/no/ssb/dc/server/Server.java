@@ -34,6 +34,7 @@ public class Server {
                 application.stop();
             }));
 
+
             application.start();
 
             long time = System.currentTimeMillis() - now;

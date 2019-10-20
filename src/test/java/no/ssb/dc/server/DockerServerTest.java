@@ -4,6 +4,7 @@ import no.ssb.dc.api.Specification;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.core.executor.Worker;
+import no.ssb.dc.test.client.ResponseHelper;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
 import no.ssb.dc.test.server.TestServerListener;
@@ -52,6 +53,12 @@ public class DockerServerTest {
         String spec = CommonUtils.readFileOrClasspathResource("worker.config/page-test.json").replace("PORT", Integer.valueOf(server.getTestServerServicePort()).toString());
         client.put("/task", spec).expect201Created();
         Thread.sleep(3000);
+    }
+
+    @Test
+    public void testHealth() {
+        ResponseHelper<String> responseHelper = client.get("/health?threads").expect200Ok();
+        System.out.printf("health:%n%s%n", responseHelper.body());
     }
 
     @Ignore
