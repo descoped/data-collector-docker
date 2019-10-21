@@ -44,7 +44,9 @@ public class WorkerService implements Service {
 
         UUID jobId = ULIDGenerator.toUUID(ULIDGenerator.nextMonotonicUlid(ulidStateHolder));
         LOG.info("Start job: {}", jobId);
+
         CompletableFuture<ExecutionContext> future = workerBuilder.build().runAsync();
+
         future.thenAccept(context -> {
             LOG.info("Completed job: {}", jobId);
            jobs.remove(jobId);
