@@ -72,6 +72,5 @@ public class WorkerService implements Service {
     public void stop() {
         CompletableFuture.allOf(jobs.values().toArray(new CompletableFuture[0]))
                 .cancel(true);
-
     }
 }

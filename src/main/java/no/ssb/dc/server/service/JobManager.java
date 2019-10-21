@@ -18,9 +18,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 class JobManager {
 
-    static final Logger LOG = LoggerFactory.getLogger(JobManager.class);
-    final Map<JobId, CompletableFuture<ExecutionContext>> workerFutures = new ConcurrentHashMap<>();
-    final ReentrantLock lock = new ReentrantLock();
+    private static final Logger LOG = LoggerFactory.getLogger(JobManager.class);
+    private final Map<JobId, CompletableFuture<ExecutionContext>> workerFutures = new ConcurrentHashMap<>();
+    private final ReentrantLock lock = new ReentrantLock();
 
     JobManager() {
     }
@@ -85,7 +85,7 @@ class JobManager {
         final UUID workerId;
         final SpecificationBuilder specificationBuilder;
 
-        public JobId(UUID workerId, SpecificationBuilder specificationBuilder) {
+        JobId(UUID workerId, SpecificationBuilder specificationBuilder) {
             this.workerId = workerId;
             this.specificationBuilder = specificationBuilder;
         }
