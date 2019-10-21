@@ -7,7 +7,7 @@ import no.ssb.dc.api.ulid.ULIDGenerator;
 import no.ssb.dc.api.ulid.ULIDStateHolder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.Service;
-import no.ssb.dc.application.health.HealthResourceFactory;
+import no.ssb.dc.application.controller.HealthResourceFactory;
 import no.ssb.dc.core.executor.Worker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
