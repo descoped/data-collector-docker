@@ -57,7 +57,7 @@ public class DockerServerTest {
 
     @Test
     public void testHealth() {
-        ResponseHelper<String> responseHelper = client.get("/health?threads").expect200Ok();
+        ResponseHelper<String> responseHelper = client.get("/health?config&contexts&threads").expect200Ok();
         System.out.printf("health:%n%s%n", responseHelper.body());
     }
 
