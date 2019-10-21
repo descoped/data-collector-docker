@@ -7,6 +7,7 @@ import no.ssb.dc.api.ulid.ULIDGenerator;
 import no.ssb.dc.api.ulid.ULIDStateHolder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.Service;
+import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.core.executor.Worker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +24,12 @@ public class WorkerService implements Service {
 
     private final ULIDStateHolder ulidStateHolder = new ULIDStateHolder();
     private final DynamicConfiguration configuration;
+    private final HealthResourceFactory healthResourceFactory;
     private final Map<UUID, CompletableFuture<ExecutionContext>> jobs = new ConcurrentHashMap<>(); // todo make future housekeeping thread that removes crashed jobs
 
-    public WorkerService(DynamicConfiguration configuration) {
+    public WorkerService(DynamicConfiguration configuration, HealthResourceFactory healthResourceFactory) {
         this.configuration = configuration;
+        this.healthResourceFactory = healthResourceFactory;
     }
 
     public void add(SpecificationBuilder specificationBuilder) {
