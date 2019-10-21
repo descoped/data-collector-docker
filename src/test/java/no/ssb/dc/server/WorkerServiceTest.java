@@ -73,7 +73,8 @@ public class WorkerServiceTest {
                         .pipe(addContent("${position}", "event-doc"))
                 );
 
-        workerService.add(specificationBuilder);
+        workerService.execute(specificationBuilder);
+        workerService.execute(specificationBuilder);
 
         workerService.start();
 

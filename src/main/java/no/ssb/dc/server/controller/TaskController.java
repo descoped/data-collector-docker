@@ -41,7 +41,7 @@ public class TaskController implements Controller {
         if ("put".equalsIgnoreCase(exchange.getRequestMethod().toString())) {
             exchange.getRequestReceiver().receiveFullString((httpServerExchange, payload) -> {
                 SpecificationBuilder specificationBuilder = Specification.deserialize(payload);
-                workerService.add(specificationBuilder);
+                workerService.execute(specificationBuilder);
 
             });
             exchange.setStatusCode(201);
