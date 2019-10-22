@@ -26,7 +26,7 @@ public class RawdataFileSystemService  {// implements Service
 //            String location = configuration.evaluateToString("data.collector.rawdata.dump.location");
 //            writer = new RawdataFileSystemWriter(
 //                    rawdataClient,
-//                    configuration.evaluateToString("namespace.default"),
+//                    topic,
 //                    location != null ?
 //                            (location.startsWith("/") ? Paths.get(location).toAbsolutePath().normalize() : Paths.get(".").toAbsolutePath().resolve(location)).normalize() :
 //                            Paths.get(".").toAbsolutePath().resolve("target").resolve("rawdata").normalize()
