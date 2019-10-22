@@ -4,7 +4,6 @@ import no.ssb.dc.api.context.ExecutionContext;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.core.executor.Worker;
-import no.ssb.dc.core.executor.WorkerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +34,7 @@ class WorkManager {
                 }
             }
         } catch (InterruptedException e) {
-            throw new WorkerException(e);
+            throw new IllegalStateException(e);
         }
         return false;
     }
@@ -62,7 +61,7 @@ class WorkManager {
                 }
             }
         } catch (InterruptedException e) {
-            throw new WorkerException(e);
+            throw new IllegalStateException(e);
         }
     }
 
@@ -77,7 +76,7 @@ class WorkManager {
                 }
             }
         } catch (InterruptedException e) {
-            throw new WorkerException(e);
+            throw new IllegalStateException(e);
         }
     }
 

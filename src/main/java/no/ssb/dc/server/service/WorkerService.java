@@ -6,14 +6,16 @@ import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.Service;
 import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.core.executor.Worker;
+import no.ssb.dc.core.executor.WorkerObservable;
 import no.ssb.dc.core.executor.WorkerObserver;
 import no.ssb.dc.core.executor.WorkerOutcome;
+import no.ssb.dc.core.health.HealthWorkerMonitor;
+import no.ssb.dc.core.health.HealthWorkerResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.UUID;
 
 public class WorkerService implements Service {
 
@@ -28,13 +30,16 @@ public class WorkerService implements Service {
         this.healthResourceFactory = healthResourceFactory;
     }
 
-    private void onWorkerStart(UUID workerId) {
-        LOG.info("Start job: {}", workerId);
+    private void onWorkerStart(WorkerObservable observable) {
+        LOG.info("Start job: {}", observable.workerId());
+        HealthWorkerResource healthWorkerResource = healthResourceFactory.addHealthResource(observable.workerId(), HealthWorkerResource.class);
+        observable.context().services().register(HealthWorkerMonitor.class, healthWorkerResource.getMonitor());
     }
 
-    private void onWorkerFinish(UUID workerId, WorkerOutcome outcome) {
-        LOG.info("Completed job: [{}] {}", outcome, workerId);
-        workManager.remove(workerId);
+    private void onWorkerFinish(WorkerObservable observable, WorkerOutcome outcome) {
+        LOG.info("Completed job: [{}] {}", outcome, observable.workerId());
+        workManager.remove(observable.workerId());
+        healthResourceFactory.removeHealthResource(observable.workerId());
     }
 
     public void execute(SpecificationBuilder specificationBuilder) {
