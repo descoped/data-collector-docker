@@ -1,7 +1,6 @@
 package no.ssb.dc.server.service;
 
 import no.ssb.config.DynamicConfiguration;
-import no.ssb.dc.api.context.ExecutionContext;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.Service;
@@ -12,11 +11,9 @@ import no.ssb.dc.core.executor.WorkerOutcome;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class WorkerService implements Service {
 
@@ -24,8 +21,7 @@ public class WorkerService implements Service {
 
     private final DynamicConfiguration configuration;
     private final HealthResourceFactory healthResourceFactory;
-    private final Map<UUID, CompletableFuture<ExecutionContext>> jobs = new ConcurrentHashMap<>(); // todo make future housekeeping thread that removes crashed jobs
-    private final JobManager jobManager = new JobManager();
+    private final WorkManager workManager = new WorkManager();
 
     public WorkerService(DynamicConfiguration configuration, HealthResourceFactory healthResourceFactory) {
         this.configuration = configuration;
@@ -38,12 +34,12 @@ public class WorkerService implements Service {
 
     private void onWorkerFinish(UUID workerId, WorkerOutcome outcome) {
         LOG.info("Completed job: [{}] {}", outcome, workerId);
-        jobManager.removeJob(workerId);
+        workManager.remove(workerId);
     }
 
     public void execute(SpecificationBuilder specificationBuilder) {
-        if (jobManager.isActive(specificationBuilder)) {
-            LOG.warn("The specification named '{}' is already running!", specificationBuilder.name());
+        if (workManager.isRunning(specificationBuilder)) {
+            LOG.warn("The specification named '{}' is already running!", specificationBuilder.getName());
             return;
         }
 
@@ -54,13 +50,11 @@ public class WorkerService implements Service {
                 .printConfiguration()
                 .printExecutionPlan();
 
-        if (configuration.evaluateToString("data.collector.certs.directory") != null) {
-            workerBuilder.buildCertificateFactory(Paths.get(configuration.evaluateToString("data.collector.certs.directory")));
-        } else {
-            workerBuilder.buildCertificateFactory(CommonUtils.currentPath());
-        }
+        String configuredCertBundlesPath = configuration.evaluateToString("data.collector.certs.directory");
+        Path certBundlesPath = configuredCertBundlesPath == null ? CommonUtils.currentPath() : Paths.get(configuredCertBundlesPath);
+        workerBuilder.buildCertificateFactory(certBundlesPath);
 
-        jobManager.runWorker(workerBuilder);
+        workManager.run(workerBuilder);
     }
 
     @Override
@@ -70,7 +64,6 @@ public class WorkerService implements Service {
 
     @Override
     public void stop() {
-        CompletableFuture.allOf(jobs.values().toArray(new CompletableFuture[0]))
-                .cancel(true);
+        workManager.cancel();
     }
 }

@@ -16,16 +16,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-class JobManager {
+class WorkManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger(JobManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(WorkManager.class);
     private final Map<JobId, CompletableFuture<ExecutionContext>> workerFutures = new ConcurrentHashMap<>();
     private final ReentrantLock lock = new ReentrantLock();
 
-    JobManager() {
+    WorkManager() {
     }
 
-    boolean isActive(SpecificationBuilder specificationBuilder) {
+    boolean isRunning(SpecificationBuilder specificationBuilder) {
         try {
             if (lock.tryLock(1, TimeUnit.SECONDS)) {
                 try {
@@ -40,11 +40,11 @@ class JobManager {
         return false;
     }
 
-    void runWorker(Worker.WorkerBuilder workerBuilder) {
+    void run(Worker.WorkerBuilder workerBuilder) {
         try {
             if (lock.tryLock(1, TimeUnit.SECONDS)) {
                 try {
-                    SpecificationBuilder specificationBuilder = workerBuilder.specificationBuilder();
+                    SpecificationBuilder specificationBuilder = workerBuilder.getSpecificationBuilder();
                     Worker worker = workerBuilder.build();
                     JobId jobId = new JobId(worker.getWorkerId(), specificationBuilder);
 
@@ -66,7 +66,7 @@ class JobManager {
         }
     }
 
-    void removeJob(UUID workerId) {
+    void remove(UUID workerId) {
         try {
             if (lock.tryLock(1, TimeUnit.SECONDS)) {
                 try {
@@ -79,6 +79,11 @@ class JobManager {
         } catch (InterruptedException e) {
             throw new WorkerException(e);
         }
+    }
+
+    void cancel() {
+        CompletableFuture.allOf(workerFutures.values().toArray(new CompletableFuture[0]))
+                .cancel(true);
     }
 
     static class JobId {
