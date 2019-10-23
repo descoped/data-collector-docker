@@ -29,7 +29,7 @@ docker push statisticsnorway/data-collector:latest
 
 ```
 docker pull statisticsnorway/data-collector:latest
-docker run -it -p 9090:9090 -v $PWD/conf:/conf -v $PWD/certs:/certs -v /tmp/rawdata:/rawdata statisticsnorway/data-collector:latest
+docker run -it -p 9990:9990 -v $PWD/conf:/conf -v $PWD/certs:/certs -v /tmp/rawdata:/rawdata statisticsnorway/data-collector:latest
 ```
 
 ## Build dev
@@ -37,5 +37,5 @@ docker run -it -p 9090:9090 -v $PWD/conf:/conf -v $PWD/certs:/certs -v /tmp/rawd
 ```
 ./build-dev.sh
 
-docker run -it -p 9090:9090 data-collector:dev
+docker run -it -p 9990:9990 data-collector:dev
 ```

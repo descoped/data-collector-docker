@@ -29,6 +29,6 @@ WORKDIR /opt/dc
 
 VOLUME ["/conf", "/certs", "/rawdata"]
 
-EXPOSE 9090
+EXPOSE 9990
 
 CMD ["java", "-XX:+UnlockExperimentalVMOptions", "-XX:+EnableJVMCI", "-p", "/opt/dc/lib", "-m", "no.ssb.dc.server/no.ssb.dc.server.Server"]

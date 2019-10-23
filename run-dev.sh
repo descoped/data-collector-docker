@@ -1,4 +1,4 @@
 #!/bin/sh
 
-docker run -it -p 9090:9090 data-collector:dev
+docker run -it -p 9990:9990 data-collector:dev
 
