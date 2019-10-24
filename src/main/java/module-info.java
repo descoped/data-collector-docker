@@ -12,6 +12,7 @@ module no.ssb.dc.server {
     requires no.ssb.rawdata.kafka;
 
     requires org.slf4j;
+    requires com.fasterxml.jackson.databind;
     requires jul.to.slf4j;
     requires ch.qos.logback.classic;
     requires ch.qos.logback.core;

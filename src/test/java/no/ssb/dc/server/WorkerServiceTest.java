@@ -4,6 +4,7 @@ import no.ssb.dc.api.Specification;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.server.service.WorkerService;
+import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
 import no.ssb.dc.test.server.TestServerListener;
 import org.testng.annotations.Listeners;
@@ -27,6 +28,9 @@ import static no.ssb.dc.api.Builders.xpath;
 
 @Listeners(TestServerListener.class)
 public class WorkerServiceTest {
+
+    @Inject
+    TestClient client;
 
     @Inject
     TestServer testServer;
@@ -73,11 +77,20 @@ public class WorkerServiceTest {
                         .pipe(addContent("${position}", "event-doc"))
                 );
 
-        workerService.execute(specificationBuilder);
-        workerService.execute(specificationBuilder);
+        workerService.createOrRejectTask(specificationBuilder);
+        workerService.createOrRejectTask(specificationBuilder);
 
         workerService.start();
 
         Thread.sleep(2000);
+    }
+
+    @Test
+    public void testServiceAlive() {
+        client.get("/health/alive").expect200Ok();
+    }
+    @Test
+    public void testServiceReady() {
+        client.get("/health/ready").expect200Ok();
     }
 }

@@ -6,16 +6,12 @@ import no.ssb.dc.application.UndertowApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Paths;
-
 public class Server {
 
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     public static void main(String[] args) {
         long now = System.currentTimeMillis();
-
-        LOG.info("WorkDir: {}", Paths.get("").toAbsolutePath());
 
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
                 .propertiesResource("application-defaults.properties")
@@ -33,7 +29,6 @@ public class Server {
                 LOG.warn("ShutdownHook triggered..");
                 application.stop();
             }));
-
 
             application.start();
 
