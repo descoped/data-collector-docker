@@ -8,9 +8,13 @@ module no.ssb.dc.server {
     requires no.ssb.dc.content.rawdata;
     requires no.ssb.rawdata.api;
     requires no.ssb.rawdata.postgres;
+    requires no.ssb.rawdata.gcs;
     requires no.ssb.rawdata.kafka;
 
     requires org.slf4j;
+    requires jul.to.slf4j;
+    requires ch.qos.logback.classic;
+    requires ch.qos.logback.core;
     requires io.github.classgraph;
 
     requires undertow.core;

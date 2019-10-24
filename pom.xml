@@ -18,7 +18,7 @@
         <module.build.sourceEncoding>UTF-8</module.build.sourceEncoding>
         <maven.javadoc.skip>true</maven.javadoc.skip>
 
-        <slf4j.version>1.8.0-beta2</slf4j.version>
+        <slf4j.version>1.8.0-beta4</slf4j.version>
         <logback.version>1.3.0-alpha4</logback.version>
 
         <testng.version>6.14.3</testng.version>
@@ -151,6 +151,17 @@
             <artifactId>data-collector-testutils</artifactId>
             <version>0.1-SNAPSHOT</version>
             <scope>test</scope>
+            <exclusions>
+                <!-- caused by gcs -->
+                <exclusion>
+                    <groupId>jakarta.xml.bind</groupId>
+                    <artifactId>jakarta.xml.bind-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>jakarta.activation</groupId>
+                    <artifactId>jakarta.activation-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -334,7 +345,7 @@
                 <version>2.20</version>
                 <!-- workaround for: https://issues.jboss.org/browse/UNDERTOW-1355 -->
                 <configuration>
-                       <argLine>
+                    <argLine>
                         --illegal-access=deny
                         -Xmx1500m
                     </argLine>
