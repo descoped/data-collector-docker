@@ -36,13 +36,13 @@ public class WorkerService implements Service {
     }
 
     private void onWorkerStart(WorkerObservable observable) {
-        LOG.info("Start job: {}", observable.workerId());
-        HealthWorkerResource healthWorkerResource = healthResourceFactory.addHealthResource(observable.workerId(), HealthWorkerResource.class);
+        LOG.info("Start worker: {}", observable.workerId());
+        HealthWorkerResource healthWorkerResource = healthResourceFactory.createAndAdddHealthResource(observable.workerId(), HealthWorkerResource.class);
         observable.context().services().register(HealthWorkerMonitor.class, healthWorkerResource.getMonitor());
     }
 
     private void onWorkerFinish(WorkerObservable observable, WorkerStatus outcome) {
-        LOG.info("Completed job: [{}] {}", outcome, observable.workerId());
+        LOG.info("Completed worker: [{}] {}", outcome, observable.workerId());
         workManager.remove(observable.workerId());
         HealthWorkerResource healthWorkerResource = healthResourceFactory.getHealthResource(observable.workerId());
         healthResourceFactory.removeHealthResource(observable.workerId());
