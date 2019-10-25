@@ -1,5 +1,6 @@
 {
   "type" : "Specification",
+  "id": "TEST",
   "name" : "paging",
   "startFunctionId" : "page-loop",
   "configure" : [ {

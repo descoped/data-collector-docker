@@ -64,7 +64,7 @@ public class DockerServerTest {
     @Ignore
     @Test
     public void ReadmeExample() {
-        SpecificationBuilder feedBuilder = Specification.start("", "loop")
+        SpecificationBuilder feedBuilder = Specification.start("", "", "loop")
                 .configure(context()
                         .topic("topic")
                         .variable("nextPosition", "${contentStream.hasLastPosition() ? contentStream.lastPosition() : 1}")

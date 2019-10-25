@@ -39,7 +39,7 @@ public class WorkerServiceTest {
     public void testWorkerService() throws InterruptedException {
         WorkerService workerService = new WorkerService(testServer.getConfiguration(), HealthResourceFactory.create());
 
-        SpecificationBuilder specificationBuilder = Specification.start("paginate mock service", "page-loop")
+        SpecificationBuilder specificationBuilder = Specification.start("WORKER-TEST", "paginate mock service", "page-loop")
                 .configure(context()
                         .topic("topic")
                         .header("accept", "application/xml")
