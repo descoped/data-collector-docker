@@ -1,10 +1,8 @@
 package no.ssb.dc.server.service;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
-import no.ssb.dc.api.util.JsonParser;
 import no.ssb.dc.application.Service;
 import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.core.executor.Worker;
@@ -21,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class WorkerService implements Service {
 
@@ -36,51 +35,75 @@ public class WorkerService implements Service {
     }
 
     private void onWorkerStart(WorkerObservable observable) {
-        LOG.info("Start worker: {}", observable.workerId());
-        HealthWorkerResource healthWorkerResource = healthResourceFactory.createAndAdddHealthResource(observable.workerId(), HealthWorkerResource.class);
-        observable.context().services().register(HealthWorkerMonitor.class, healthWorkerResource.getMonitor());
+        workManager.lock(observable.specificationId());
+        try {
+            LOG.info("Start worker: {}", observable.workerId());
+            HealthWorkerResource healthWorkerResource = healthResourceFactory.createAndAdddHealthResource(observable.workerId(), HealthWorkerResource.class);
+            observable.context().services().register(HealthWorkerMonitor.class, healthWorkerResource.getMonitor());
+        } finally {
+            workManager.unlock(observable.specificationId());
+        }
     }
 
     private void onWorkerFinish(WorkerObservable observable, WorkerStatus outcome) {
-        LOG.info("Completed worker: [{}] {}", outcome, observable.workerId());
-        workManager.remove(observable.workerId());
-        HealthWorkerResource healthWorkerResource = healthResourceFactory.getHealthResource(observable.workerId());
-        healthResourceFactory.removeHealthResource(observable.workerId());
-        healthResourceFactory.getHealthResource(HealthWorkerHistoryResource.class).add(healthWorkerResource);
+        workManager.lock(observable.specificationId());
+        try {
+            LOG.info("Completed worker: [{}] {}", outcome, observable.workerId());
+            workManager.remove(observable.workerId());
+            HealthWorkerResource healthWorkerResource = healthResourceFactory.getHealthResource(observable.workerId());
+            healthResourceFactory.removeHealthResource(observable.workerId());
+            healthResourceFactory.getHealthResource(HealthWorkerHistoryResource.class).add(healthWorkerResource);
+        } finally {
+            workManager.unlock(observable.specificationId());
+        }
     }
 
-    public boolean createOrRejectTask(SpecificationBuilder specificationBuilder) {
-        if (workManager.isRunning(specificationBuilder)) {
-            LOG.warn("The specification named '{}' is already running!", specificationBuilder.getName());
-            return false;
+    public String createOrRejectTask(SpecificationBuilder specificationBuilder) {
+        if ("".equals(specificationBuilder.getId())) {
+            LOG.warn("The specification id is empty!");
+            return null;
         }
 
-        Worker.WorkerBuilder workerBuilder = Worker.newBuilder()
-                .configuration(configuration.asMap())
-                .workerObserver(new WorkerObserver(this::onWorkerStart, this::onWorkerFinish))
-                .specification(specificationBuilder)
-                .printConfiguration()
-                .printExecutionPlan();
+        workManager.lock(specificationBuilder.getId());
+        try {
+            if (workManager.isRunning(specificationBuilder.getId())) {
+                LOG.warn("The specification '{}' is already running!", specificationBuilder.getId());
+                return null;
+            }
 
-        String configuredCertBundlesPath = configuration.evaluateToString("data.collector.certs.directory");
-        Path certBundlesPath = configuredCertBundlesPath == null ? CommonUtils.currentPath() : Paths.get(configuredCertBundlesPath);
-        workerBuilder.buildCertificateFactory(certBundlesPath);
+            Worker.WorkerBuilder workerBuilder = Worker.newBuilder()
+                    .configuration(configuration.asMap())
+                    .workerObserver(new WorkerObserver(this::onWorkerStart, this::onWorkerFinish))
+                    .specification(specificationBuilder)
+                    .printConfiguration()
+                    .printExecutionPlan();
 
-        workManager.run(workerBuilder);
+            String configuredCertBundlesPath = configuration.evaluateToString("data.collector.certs.directory");
+            Path certBundlesPath = configuredCertBundlesPath == null ? CommonUtils.currentPath() : Paths.get(configuredCertBundlesPath);
+            workerBuilder.buildCertificateFactory(certBundlesPath);
 
-        return true;
+            return workManager.run(workerBuilder).workerId.toString();
+        } finally {
+            workManager.unlock(specificationBuilder.getId());
+        }
     }
 
-    public String list() {
-        List<UUID> workers = workManager.list();
-        JsonParser jsonParser = JsonParser.createJsonParser();
-        ArrayNode rootNode = jsonParser.createArrayNode();
-        workers.forEach(id -> rootNode.add(id.toString()));
-        return jsonParser.toJSON(rootNode);
+    public List<String> list() {
+        return workManager.list().stream().map(UUID::toString).collect(Collectors.toList());
     }
 
     public boolean cancelTask(String workerId) {
-        return workManager.cancel(UUID.fromString(workerId));
+        WorkManager.JobId jobId = workManager.get(UUID.fromString(workerId));
+        if (jobId == null) {
+            LOG.warn("Worker '{}' NOT found! Maybe it was already completed.", workerId);
+            return false;
+        }
+        workManager.lock(jobId.specificationId);
+        try {
+            return workManager.cancel(UUID.fromString(workerId));
+        } finally {
+            workManager.unlock(jobId.specificationId);
+        }
     }
 
     @Override

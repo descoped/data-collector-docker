@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class TaskController implements Controller {
 
@@ -62,14 +61,12 @@ public class TaskController implements Controller {
 
 
     private void createWorkerTask(HttpServerExchange exchange) {
-        AtomicReference<String> createdWorkerId = new AtomicReference<>();
         exchange.getRequestReceiver().receiveFullString((httpServerExchange, payload) -> {
             SpecificationBuilder specificationBuilder = Specification.deserialize(payload);
-            createdWorkerId.set(workerService.createOrRejectTask(specificationBuilder));
-
+            String workerId = workerService.createOrRejectTask(specificationBuilder);
+            int statusCode = workerId != null ? HttpStatusCode.HTTP_CREATED.statusCode() : HttpStatusCode.HTTP_CONFLICT.statusCode();
+            exchange.setStatusCode(statusCode);
         });
-        int statusCode = createdWorkerId.get() != null ? HttpStatusCode.HTTP_CREATED.statusCode() : HttpStatusCode.HTTP_CONFLICT.statusCode();
-        exchange.setStatusCode(statusCode);
     }
 
     private void cancelTask(HttpServerExchange exchange) {
