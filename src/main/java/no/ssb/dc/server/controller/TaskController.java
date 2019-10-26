@@ -1,7 +1,6 @@
 package no.ssb.dc.server.controller;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 import no.ssb.dc.api.Specification;
 import no.ssb.dc.api.http.HttpStatusCode;
 import no.ssb.dc.api.http.Request;
@@ -15,7 +14,7 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class TaskController implements Controller {
 
@@ -34,7 +33,7 @@ public class TaskController implements Controller {
 
     @Override
     public Set<Request.Method> allowedMethods() {
-        return Set.of(Request.Method.PUT, Request.Method.GET, Request.Method.DELETE);
+        return Set.of(Request.Method.PUT, Request.Method.DELETE);
     }
 
     @Override
@@ -51,13 +50,6 @@ public class TaskController implements Controller {
             }
         }
 
-        if ("get".equalsIgnoreCase(exchange.getRequestMethod().toString())) {
-            if ("/task".equals(exchange.getRequestPath())) {
-                getTaskList(exchange);
-                return;
-            }
-        }
-
         if ("delete".equalsIgnoreCase(exchange.getRequestMethod().toString())) {
             if (exchange.getRequestPath().startsWith("/task")) {
                 cancelTask(exchange);
@@ -70,21 +62,14 @@ public class TaskController implements Controller {
 
 
     private void createWorkerTask(HttpServerExchange exchange) {
-        AtomicBoolean createdWorkerTask = new AtomicBoolean(false);
+        AtomicReference<String> createdWorkerId = new AtomicReference<>();
         exchange.getRequestReceiver().receiveFullString((httpServerExchange, payload) -> {
             SpecificationBuilder specificationBuilder = Specification.deserialize(payload);
-            createdWorkerTask.set(workerService.createOrRejectTask(specificationBuilder));
+            createdWorkerId.set(workerService.createOrRejectTask(specificationBuilder));
 
         });
-        int statusCode = createdWorkerTask.get() ? HttpStatusCode.HTTP_CREATED.statusCode() : HttpStatusCode.HTTP_CONFLICT.statusCode();
+        int statusCode = createdWorkerId.get() != null ? HttpStatusCode.HTTP_CREATED.statusCode() : HttpStatusCode.HTTP_CONFLICT.statusCode();
         exchange.setStatusCode(statusCode);
-    }
-
-    private void getTaskList(HttpServerExchange exchange) {
-        String responseBody = workerService.list();
-        exchange.setStatusCode(200);
-        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-        exchange.getResponseSender().send(responseBody);
     }
 
     private void cancelTask(HttpServerExchange exchange) {
@@ -94,8 +79,8 @@ public class TaskController implements Controller {
             return;
         }
         NavigableSet<String> pathElements = new TreeSet<>(List.of(path));
-        String workerId = pathElements.pollFirst();
-        String resourceName = pathElements.pollFirst();
+        String resourceName = pathElements.pollLast();
+        String workerId = pathElements.pollLast();
         boolean canceled = workerService.cancelTask(workerId);
         if (!canceled) {
             exchange.setStatusCode(400);
