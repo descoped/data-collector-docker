@@ -45,10 +45,14 @@ public class WorkerService implements Service {
         }
     }
 
-    private void onWorkerFinish(WorkerObservable observable, WorkerStatus outcome) {
+    private void onWorkerFinish(WorkerObservable observable, WorkerStatus status) {
         workManager.lock(observable.specificationId());
         try {
-            LOG.info("Completed worker: [{}] {}", outcome, observable.workerId());
+            if (status == WorkerStatus.COMPLETED) {
+                LOG.info("Completed worker: [{}] {}", status, observable.workerId());
+            } else {
+                LOG.error("Completed worker: [{}] {}", status, observable.workerId());
+            }
             workManager.remove(observable.workerId());
             HealthWorkerResource healthWorkerResource = healthResourceFactory.getHealthResource(observable.workerId());
             healthResourceFactory.removeHealthResource(observable.workerId());
