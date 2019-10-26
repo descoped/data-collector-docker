@@ -10,7 +10,7 @@
         </encoder>
     </appender>
 
-    <logger name="no.ssb.dc" level="INFO"/>
+    <logger name="no.ssb.dc" level="DEBUG"/>
     <logger name="no.ssb.rawdata" level="INFO"/>
 
     <root level="INFO">
