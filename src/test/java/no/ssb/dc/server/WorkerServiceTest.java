@@ -77,10 +77,11 @@ public class WorkerServiceTest {
                         .pipe(addContent("${position}", "event-doc"))
                 );
 
-        workerService.createOrRejectTask(specificationBuilder);
+        String workerId = workerService.createOrRejectTask(specificationBuilder);
         workerService.createOrRejectTask(specificationBuilder);
 
-        workerService.start();
+        Thread.sleep(500);
+        workerService.cancelTask(workerId);
 
         Thread.sleep(2000);
     }

@@ -1,6 +1,7 @@
 package no.ssb.dc.server;
 
 import no.ssb.dc.api.Specification;
+import no.ssb.dc.api.http.HttpStatusCode;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.core.executor.Worker;
@@ -52,6 +53,7 @@ public class DockerServerTest {
     public void testPutTask() throws InterruptedException {
         String spec = CommonUtils.readFileOrClasspathResource("worker.config/page-test.json").replace("PORT", Integer.valueOf(server.getTestServerServicePort()).toString());
         client.put("/task", spec).expect201Created();
+        client.put("/task", spec).expectAnyOf(HttpStatusCode.HTTP_CONFLICT.statusCode());
         Thread.sleep(3000);
     }
 
