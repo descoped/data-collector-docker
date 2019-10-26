@@ -18,7 +18,7 @@ public class Server {
                 .propertiesResource("/conf/application-defaults.properties")
                 .propertiesResource("/conf/application.properties")
                 //.propertiesResource("application-integration.properties")
-                //.propertiesResource("../data-collection-consumer-specifications/profile/gcs/conf/application.properties/application-integration.properties")
+                //.propertiesResource("../data-collection-consumer-specifications/profile/gcs/conf/application.properties")
                 .environment("DC_")
                 .systemProperties()
                 .build();
