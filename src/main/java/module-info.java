@@ -13,7 +13,7 @@ module no.ssb.dc.server {
 
     requires org.slf4j;
     requires com.fasterxml.jackson.databind;
-    requires jul.to.slf4j;
+    requires jul_to_slf4j;
     requires ch.qos.logback.classic;
     requires ch.qos.logback.core;
     requires io.github.classgraph;
