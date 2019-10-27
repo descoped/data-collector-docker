@@ -39,3 +39,30 @@ docker run -it -p 9990:9990 -v $PWD/conf:/conf -v $PWD/certs:/certs -v /tmp/rawd
 
 docker run -it -p 9990:9990 data-collector:dev
 ```
+
+## Build dev and Visual VM Profiling
+
+Visual VM can be connected to `no.ssb.dc.server.Server` or using `data-collector:dev` image.
+
+Follow these instructions for setting up profiling.
+
+### Run `Server` from IntelliJ
+
+1. Configure `Server` (see enum inside)
+1. Consult readme in `data-collection-consumer-specifications`-repo regarding GCS configuration
+1. Run `Server` in IntelliJ using Visual VM plugin
+1. `make collect-freg-playground`
+
+### Docker-dev (`data-collection-consumer-specifications`)
+
+> Consult readme in `data-collection-consumer-specifications`-repo regarding GCS configuration.
+
+1. `make build-data-collector-dev-image`
+1. `make start-gcs-dev`
+1. `make tail-gcs-dev`
+1. [Download and open Visual VM](https://visualvm.github.io/) (standard version, not Graal download)
+1. File --> Add Remote Host ("0.0.0.0")
+1. In left pane, right click "0.0.0.0" and Choose "Add JMX Connection"
+1. Set port to 9992
+1. `make collect-freg-playground`
+
