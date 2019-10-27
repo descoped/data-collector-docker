@@ -1,6 +1,5 @@
 package no.ssb.dc.server;
 
-import no.ssb.config.DynamicConfiguration;
 import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dc.application.UndertowApplication;
 import org.slf4j.Logger;
@@ -10,21 +9,36 @@ public class Server {
 
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
+    private static final ConfigurationOverride configurationOverride = ConfigurationOverride.NONE;
+
     public static void main(String[] args) {
         long now = System.currentTimeMillis();
 
-        DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
+        StoreBasedDynamicConfiguration.Builder configurationBuilder = new StoreBasedDynamicConfiguration.Builder()
                 .propertiesResource("application-defaults.properties")
                 .propertiesResource("/conf/application-defaults.properties")
-                .propertiesResource("/conf/application.properties")
-                //.propertiesResource("application-integration.properties")
-                .values(IntegrationTestProfile.loadApplicationPropertiesFromConsumerSpecificationProfile("gcs",
-                        "data.collector.certs.directory", "gcs.service-account.key-file", "local-temp-folder"))
-                .environment("DC_")
-                .systemProperties()
-                .build();
+                .propertiesResource("/conf/application.properties");
 
-        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration);
+        /*
+         * pre-req: `docker-compose up` in this repo
+         */
+        if (configurationOverride == ConfigurationOverride.DEBUG_USING_POSTGRES) {
+            configurationBuilder.propertiesResource("application-integration.properties");
+        }
+
+        /*
+         * pre-req: refer to data-collection-consumer-specifications-repo and configure gcs
+         */
+        if (configurationOverride == ConfigurationOverride.DEBUG_USING_GCS) {
+            configurationBuilder.values(IntegrationTestProfile.loadApplicationPropertiesFromConsumerSpecificationProfile("gcs",
+                    "data.collector.certs.directory", "gcs.service-account.key-file", "local-temp-folder"));
+        }
+
+        configurationBuilder
+                .environment("DC_")
+                .systemProperties();
+
+        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configurationBuilder.build());
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -45,5 +59,11 @@ public class Server {
         } finally {
             application.stop();
         }
+    }
+
+    enum ConfigurationOverride {
+        NONE,
+        DEBUG_USING_POSTGRES,
+        DEBUG_USING_GCS;
     }
 }
