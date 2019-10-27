@@ -96,6 +96,7 @@ public class WorkerService implements Service {
         return workManager.list().stream().map(UUID::toString).collect(Collectors.toList());
     }
 
+    // TODO lock prevents onWorkerFinish to complete
     public boolean cancelTask(String workerId) {
         WorkManager.JobId jobId = workManager.get(UUID.fromString(workerId));
         if (jobId == null) {

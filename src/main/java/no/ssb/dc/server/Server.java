@@ -18,7 +18,8 @@ public class Server {
                 .propertiesResource("/conf/application-defaults.properties")
                 .propertiesResource("/conf/application.properties")
                 //.propertiesResource("application-integration.properties")
-                //.propertiesResource("../data-collection-consumer-specifications/profile/gcs/conf/application.properties")
+                .values(IntegrationTestProfile.loadApplicationPropertiesFromConsumerSpecificationProfile("gcs",
+                        "data.collector.certs.directory", "gcs.service-account.key-file", "local-temp-folder"))
                 .environment("DC_")
                 .systemProperties()
                 .build();
