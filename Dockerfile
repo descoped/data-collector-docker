@@ -27,7 +27,7 @@ ENV PATH=/opt/jdk/bin:$PATH
 
 WORKDIR /opt/dc
 
-VOLUME ["/conf", "/certs", "/rawdata"]
+VOLUME ["/conf", "/certs"]
 
 EXPOSE 9990
 
