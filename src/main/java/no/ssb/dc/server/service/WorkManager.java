@@ -70,7 +70,7 @@ public class WorkManager {
     }
 
     boolean cancel(UUID workerId) {
-        if (!list().contains(workerId)) {
+        if (list().stream().noneMatch(task -> task.taskId.equals(workerId.toString()))) {
             LOG.warn("Cannot cancel workerId: {}. Not found!", workerId);
             return false;
         }
@@ -133,12 +133,12 @@ public class WorkManager {
     }
 
     public static class Task {
-        @JsonProperty("task-id") public final String taskd;
+        @JsonProperty("task-id") public final String taskId;
         @JsonProperty("specification-id") public final String specificationId;
         @JsonProperty("description") public final String description;
 
-        Task(String taskd, String specificationId, String description) {
-            this.taskd = taskd;
+        Task(String taskId, String specificationId, String description) {
+            this.taskId = taskId;
             this.specificationId = specificationId;
             this.description = description;
         }
@@ -148,20 +148,20 @@ public class WorkManager {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Task task = (Task) o;
-            return taskd.equals(task.taskd) &&
+            return taskId.equals(task.taskId) &&
                     specificationId.equals(task.specificationId) &&
                     Objects.equals(description, task.description);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(taskd, specificationId, description);
+            return Objects.hash(taskId, specificationId, description);
         }
 
         @Override
         public String toString() {
             return "Task{" +
-                    "taskd='" + taskd + '\'' +
+                    "taskd='" + taskId + '\'' +
                     ", specificationId='" + specificationId + '\'' +
                     ", description='" + description + '\'' +
                     '}';
