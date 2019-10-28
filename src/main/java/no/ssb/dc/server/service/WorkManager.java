@@ -1,5 +1,6 @@
 package no.ssb.dc.server.service;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import no.ssb.dc.api.context.ExecutionContext;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.core.executor.Worker;
@@ -18,7 +19,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-class WorkManager {
+public class WorkManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(WorkManager.class);
     private final Map<JobId, CompletableFuture<ExecutionContext>> workerFutures = new ConcurrentHashMap<>();
@@ -48,7 +49,7 @@ class WorkManager {
     JobId run(Worker.WorkerBuilder workerBuilder) {
         String specificationId = workerBuilder.getSpecificationBuilder().getId();
         Worker worker = workerBuilder.build();
-        JobId jobId = new JobId(worker.getWorkerId(), specificationId, worker);
+        JobId jobId = new JobId(worker.getWorkerId(), specificationId, worker.getSpecificationName(), worker);
 
         CompletableFuture<ExecutionContext> future = worker
                 .runAsync()
@@ -62,8 +63,10 @@ class WorkManager {
         return jobId;
     }
 
-    List<UUID> list() {
-        return workerFutures.keySet().stream().map(jobId -> jobId.workerId).collect(Collectors.toList());
+    List<Task> list() {
+        return workerFutures.keySet().stream()
+                .map(jobId -> new Task(jobId.workerId.toString(), jobId.specificationId, jobId.specificationName))
+                .collect(Collectors.toList());
     }
 
     boolean cancel(UUID workerId) {
@@ -95,11 +98,13 @@ class WorkManager {
     static class JobId {
         final UUID workerId;
         final String specificationId;
+        final String specificationName;
         final Worker worker;
 
-        JobId(UUID workerId, String specificationId, Worker worker) {
+        JobId(UUID workerId, String specificationId, String specificationName, Worker worker) {
             this.workerId = workerId;
             this.specificationId = specificationId;
+            this.specificationName = specificationName;
             this.worker = worker;
         }
 
@@ -122,6 +127,43 @@ class WorkManager {
             return "JobId{" +
                     "workerId=" + workerId +
                     ", specificationId='" + specificationId + '\'' +
+                    ", specificationName='" + specificationName + '\'' +
+                    '}';
+        }
+    }
+
+    public static class Task {
+        @JsonProperty("task-id") public final String taskd;
+        @JsonProperty("specification-id") public final String specificationId;
+        @JsonProperty("description") public final String description;
+
+        Task(String taskd, String specificationId, String description) {
+            this.taskd = taskd;
+            this.specificationId = specificationId;
+            this.description = description;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Task task = (Task) o;
+            return taskd.equals(task.taskd) &&
+                    specificationId.equals(task.specificationId) &&
+                    Objects.equals(description, task.description);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(taskd, specificationId, description);
+        }
+
+        @Override
+        public String toString() {
+            return "Task{" +
+                    "taskd='" + taskd + '\'' +
+                    ", specificationId='" + specificationId + '\'' +
+                    ", description='" + description + '\'' +
                     '}';
         }
     }

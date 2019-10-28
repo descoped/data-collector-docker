@@ -9,6 +9,8 @@ import no.ssb.dc.test.client.ResponseHelper;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
 import no.ssb.dc.test.server.TestServerListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.Ignore;
 import org.testng.annotations.Listeners;
 import org.testng.annotations.Test;
@@ -33,6 +35,8 @@ import static no.ssb.dc.api.Builders.xpath;
 @Listeners(TestServerListener.class)
 public class DockerServerTest {
 
+    private static final Logger LOG = LoggerFactory.getLogger(DockerServerTest.class);
+
     @Inject
     TestServer server;
 
@@ -52,8 +56,9 @@ public class DockerServerTest {
     @Test
     public void testPutTask() throws InterruptedException {
         String spec = CommonUtils.readFileOrClasspathResource("worker.config/page-test.json").replace("PORT", Integer.valueOf(server.getTestServerServicePort()).toString());
-        client.put("/task", spec).expect201Created();
-        client.put("/task", spec).expectAnyOf(HttpStatusCode.HTTP_CONFLICT.statusCode());
+        client.put("/tasks", spec).expect201Created();
+        LOG.trace("list: {}", client.get("/tasks").expect200Ok().body());
+        client.put("/tasks", spec).expectAnyOf(HttpStatusCode.HTTP_CONFLICT.statusCode());
         Thread.sleep(3000);
     }
 

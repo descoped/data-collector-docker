@@ -19,7 +19,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class WorkerService implements Service {
 
@@ -92,8 +91,8 @@ public class WorkerService implements Service {
         }
     }
 
-    public List<String> list() {
-        return workManager.list().stream().map(UUID::toString).collect(Collectors.toList());
+    public List<WorkManager.Task> list() {
+        return workManager.list();
     }
 
     // TODO lock prevents onWorkerFinish to complete

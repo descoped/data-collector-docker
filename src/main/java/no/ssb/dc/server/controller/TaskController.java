@@ -1,11 +1,14 @@
 package no.ssb.dc.server.controller;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import no.ssb.dc.api.Specification;
 import no.ssb.dc.api.http.HttpStatusCode;
 import no.ssb.dc.api.http.Request;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
+import no.ssb.dc.api.util.JsonParser;
 import no.ssb.dc.application.Controller;
+import no.ssb.dc.server.service.WorkManager;
 import no.ssb.dc.server.service.WorkerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +30,12 @@ public class TaskController implements Controller {
 
     @Override
     public String contextPath() {
-        return "/task";
+        return "/tasks";
     }
 
     @Override
     public Set<Request.Method> allowedMethods() {
-        return Set.of(Request.Method.PUT, Request.Method.DELETE);
+        return Set.of(Request.Method.PUT, Request.Method.GET, Request.Method.DELETE);
     }
 
     @Override
@@ -43,14 +46,21 @@ public class TaskController implements Controller {
         }
 
         if ("put".equalsIgnoreCase(exchange.getRequestMethod().toString())) {
-            if ("/task".equals(exchange.getRequestPath())) {
+            if ("/tasks".equals(exchange.getRequestPath())) {
                 createWorkerTask(exchange);
                 return;
             }
         }
 
+        if ("get".equalsIgnoreCase(exchange.getRequestMethod().toString())) {
+            if ("/tasks".equals(exchange.getRequestPath())) {
+                getTaskList(exchange);
+                return;
+            }
+        }
+
         if ("delete".equalsIgnoreCase(exchange.getRequestMethod().toString())) {
-            if (exchange.getRequestPath().startsWith("/task")) {
+            if (exchange.getRequestPath().startsWith("/tasks")) {
                 cancelTask(exchange);
                 return;
             }
@@ -67,6 +77,17 @@ public class TaskController implements Controller {
             int statusCode = workerId != null ? HttpStatusCode.HTTP_CREATED.statusCode() : HttpStatusCode.HTTP_CONFLICT.statusCode();
             exchange.setStatusCode(statusCode);
         });
+    }
+
+
+    private void getTaskList(HttpServerExchange exchange) {
+        List<WorkManager.Task> tasks = workerService.list();
+        JsonParser jsonParser = JsonParser.createJsonParser();
+        String responseBody = jsonParser.toPrettyJSON(tasks);
+
+        exchange.setStatusCode(200);
+        exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+        exchange.getResponseSender().send(responseBody);
     }
 
     private void cancelTask(HttpServerExchange exchange) {
