@@ -8,20 +8,24 @@ For more information about Data Collector, please refer to the [Data Collector d
 
 ## Build
 
-`mvn clean install`
+```
+cd data-collector-project
+mvn clean install
+```
 
 
 ### Build and release docker-dev image
 
 ```
-mvn -B clean install -DskipTests && mvn -B dependency:copy-dependencies
-```
+cd data-collector-docker
 
-```
+mvn -B clean install -DskipTests && mvn -B dependency:copy-dependencies
+
 docker login -u USERNAME
-docker build --no-cache -t statisticsnorway/data-collector:0.1 -f ./Dockerfile-dev .
-docker push statisticsnorway/data-collector:0.1
-docker tag statisticsnorway/data-collector:0.1 statisticsnorway/data-collector:latest
+
+docker build --no-cache -t statisticsnorway/data-collector:0.x -f ./Dockerfile-dev .
+docker push statisticsnorway/data-collector:0.x
+docker tag statisticsnorway/data-collector:0.x statisticsnorway/data-collector:latest
 docker push statisticsnorway/data-collector:latest
 ```
 
