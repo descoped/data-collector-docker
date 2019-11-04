@@ -16,6 +16,10 @@ mvn clean install
 
 ### Build and release docker-dev image
 
+> :bulb: To determine next version manually, check latest version at [Docker Hub](https://cloud.docker.com/u/statisticsnorway/repository/docker/statisticsnorway/data-collector/tags)
+
+> :warning: Versioning must follow: https://semver.org
+
 ```
 cd data-collector-docker
 
@@ -23,9 +27,9 @@ mvn -B clean install -DskipTests && mvn -B dependency:copy-dependencies
 
 docker login -u USERNAME
 
-docker build --no-cache -t statisticsnorway/data-collector:0.x -f ./Dockerfile-dev .
-docker push statisticsnorway/data-collector:0.x
-docker tag statisticsnorway/data-collector:0.x statisticsnorway/data-collector:latest
+docker build --no-cache -t statisticsnorway/data-collector:MAJOR.MINOR.PATCH -f ./Dockerfile-dev .
+docker push statisticsnorway/data-collector:MAJOR.MINOR.PATCH
+docker tag statisticsnorway/data-collector:MAJOR.MINOR.PATCH statisticsnorway/data-collector:latest
 docker push statisticsnorway/data-collector:latest
 ```
 
