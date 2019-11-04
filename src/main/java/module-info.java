@@ -8,7 +8,7 @@ module no.ssb.dc.server {
     requires no.ssb.dc.content.rawdata;
     requires no.ssb.rawdata.api;
     requires no.ssb.rawdata.postgres;
-    requires no.ssb.rawdata.gcs;
+    requires no.ssb.rawdata.avro;
     requires no.ssb.rawdata.kafka;
 
     requires org.slf4j;
