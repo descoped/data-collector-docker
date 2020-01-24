@@ -16,6 +16,8 @@ RUN mvn -B verify && mvn -B dependency:copy-dependencies
 #
 FROM alpine:latest
 
+RUN apk add --no-cache curl openssl
+
 #
 # Resources from build image
 #

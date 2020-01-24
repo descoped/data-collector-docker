@@ -11,6 +11,8 @@ RUN ["jlink", "--strip-debug", "--no-header-files", "--no-man-pages", "--compres
 #
 FROM alpine:latest
 
+RUN apk add --no-cache curl openssl
+
 #
 # Resources from build image
 #
