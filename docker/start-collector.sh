@@ -1,16 +1,26 @@
 #!/usr/bin/env bash
 set -e
 
-# test: PROXY_HTTP=localhost PROXY_PORT=10000 ./boostrap-dev.sh
+# test: PROXY_HTTP_HOST=localhost PROXY_HTTP_PORT=10000 ./start-collector.sh
 
-if [ -n "$PROXY_HTTP" ]
+if [ -n "$PROXY_HTTP_HOST" ]
 then
-  PROXY_OPTS="-Dhttp.proxyHost=$PROXY_HTTP"
+  PROXY_OPTS="-Dhttp.proxyHost=$PROXY_HTTP_HOST"
 fi
 
-if [ -n "$PROXY_PORT" ]
+if [ -n "$PROXY_HTTP_PORT" ]
 then
-  PROXY_OPTS="$PROXY_OPTS -Dhttp.proxyPort=$PROXY_PORT"
+  PROXY_OPTS="$PROXY_OPTS -Dhttp.proxyPort=$PROXY_HTTP_PORT"
+fi
+
+if [ -n "$PROXY_HTTPS_HOST" ]
+then
+  PROXY_OPTS="-Dhttps.proxyHost=$PROXY_HTTPS_HOST"
+fi
+
+if [ -n "$PROXY_HTTPS_PORT" ]
+then
+  PROXY_OPTS="$PROXY_OPTS -Dhttps.proxyPort=$PROXY_HTTPS_PORT"
 fi
 
 echo "PROXY_OPTS=$PROXY_OPTS"

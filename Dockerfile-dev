@@ -10,7 +10,19 @@ FROM statisticsnorway/alpine-jdk13-buildtools:latest as build
 #
 FROM alpine:latest
 
-RUN apk add --no-cache bash curl openssl
+RUN apk add --no-cache bash su-exec curl openssl
+
+ENV DC_HOME=/opt/dc
+
+ENV PROXY_HTTP_HOST=
+ENV PROXY_HTTP_PORT=
+ENV PROXY_HTTPS_HOST=
+ENV PROXY_HTTPS_PORT=
+
+ENV UID=dc
+ENV GID=dc
+
+RUN useradd -r --create-home --home-dir $DC_HOME --groups $GID --shell /bin/bash $UID
 
 #
 # Resources from build image
@@ -19,20 +31,21 @@ COPY --from=build /opt/jdk /opt/jdk/
 COPY target/dependency /opt/dc/lib/
 COPY target/data-collector-*.jar /opt/dc/lib/
 
-ADD docker/boostrap-dev.sh /run.sh
+ADD docker/start-collector.sh /run.sh
 RUN chmod +x /run.sh
 
-ENV PROXY_HOST=
-ENV PROXY_PORT=
+COPY docker/entrypoint.bash /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 ENV PATH=/opt/jdk/bin:$PATH
 ENV JAVA_HOME=/opt/jdk
 
-WORKDIR /opt/dc
+WORKDIR $DC_HOME
 
 VOLUME ["/conf", "/certs"]
 
 EXPOSE 9990
 EXPOSE 9992
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/run.sh"]
