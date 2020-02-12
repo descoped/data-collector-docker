@@ -1,10 +1,9 @@
-FROM statisticsnorway/lds-server-base:latest as build
+FROM statisticsnorway/alpine-jdk13-buildtools:latest as build
 
 #
 # Build DC Backend
 #
-RUN ["jlink", "--strip-debug", "--no-header-files", "--no-man-pages", "--compress=2", "--module-path", "/opt/jdk/jmods", "--output", "/linked",\
- "--add-modules", "jdk.unsupported,java.base,java.management,java.net.http,java.xml,java.naming,java.sql,java.desktop,java.security.jgss,java.instrument,jdk.internal.vm.compiler,jdk.management.agent"]
+
 
 #
 # Build DC image
@@ -16,7 +15,7 @@ RUN apk add --no-cache bash curl openssl
 #
 # Resources from build image
 #
-COPY --from=build /linked /opt/jdk/
+COPY --from=build /opt/jdk /opt/jdk/
 COPY target/dependency /opt/dc/lib/
 COPY target/data-collector-*.jar /opt/dc/lib/
 
@@ -27,6 +26,7 @@ ENV PROXY_HOST=
 ENV PROXY_PORT=
 
 ENV PATH=/opt/jdk/bin:$PATH
+ENV JAVA_HOME=/opt/jdk
 
 WORKDIR /opt/dc
 
