@@ -7,7 +7,7 @@ import no.ssb.dc.api.http.HttpStatusCode;
 import no.ssb.dc.api.http.Request;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.JsonParser;
-import no.ssb.dc.application.Controller;
+import no.ssb.dc.application.server.Controller;
 import no.ssb.dc.server.service.WorkManager;
 import no.ssb.dc.server.service.WorkerService;
 import org.slf4j.Logger;

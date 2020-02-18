@@ -1,7 +1,7 @@
 package no.ssb.dc.server;
 
 import no.ssb.config.StoreBasedDynamicConfiguration;
-import no.ssb.dc.application.UndertowApplication;
+import no.ssb.dc.application.server.UndertowApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
