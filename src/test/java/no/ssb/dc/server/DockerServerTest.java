@@ -8,12 +8,12 @@ import no.ssb.dc.core.executor.Worker;
 import no.ssb.dc.test.client.ResponseHelper;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
-import no.ssb.dc.test.server.TestServerListener;
+import no.ssb.dc.test.server.TestServerExtension;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.Ignore;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import java.util.Map;
@@ -32,7 +32,7 @@ import static no.ssb.dc.api.Builders.status;
 import static no.ssb.dc.api.Builders.whenVariableIsNull;
 import static no.ssb.dc.api.Builders.xpath;
 
-@Listeners(TestServerListener.class)
+@ExtendWith(TestServerExtension.class)
 public class DockerServerTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(DockerServerTest.class);
@@ -68,7 +68,7 @@ public class DockerServerTest {
         System.out.printf("health:%n%s%n", responseHelper.body());
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void ReadmeExample() {
         SpecificationBuilder feedBuilder = Specification.start("", "", "loop")

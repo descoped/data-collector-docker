@@ -6,9 +6,9 @@ import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.server.service.WorkerService;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
-import no.ssb.dc.test.server.TestServerListener;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import no.ssb.dc.test.server.TestServerExtension;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import javax.inject.Inject;
 
@@ -26,7 +26,7 @@ import static no.ssb.dc.api.Builders.status;
 import static no.ssb.dc.api.Builders.whenVariableIsNull;
 import static no.ssb.dc.api.Builders.xpath;
 
-@Listeners(TestServerListener.class)
+@ExtendWith(TestServerExtension.class)
 public class WorkerServiceTest {
 
     @Inject

@@ -20,6 +20,9 @@ module no.ssb.dc.server {
 
     requires undertow.core;
 
+    opens no.ssb.dc.server;
+    opens worker.config;
+
     exports no.ssb.dc.server;
     exports no.ssb.dc.server.controller;
     exports no.ssb.dc.server.service;
