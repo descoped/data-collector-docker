@@ -4,7 +4,7 @@ import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.health.HealthResourceFactory;
-import no.ssb.dc.application.server.Service;
+import no.ssb.dc.application.spi.Service;
 import no.ssb.dc.core.executor.Worker;
 import no.ssb.dc.core.executor.WorkerObservable;
 import no.ssb.dc.core.executor.WorkerObserver;
