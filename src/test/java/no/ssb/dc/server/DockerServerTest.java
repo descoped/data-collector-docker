@@ -50,7 +50,7 @@ public class DockerServerTest {
 
     @Test
     public void testMockServer() {
-        client.get("/mock").expect200Ok();
+        client.get("/events").expect200Ok();
     }
 
     @Test
