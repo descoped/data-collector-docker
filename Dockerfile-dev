@@ -19,10 +19,10 @@ ENV PROXY_HTTP_PORT=
 ENV PROXY_HTTPS_HOST=
 ENV PROXY_HTTPS_PORT=
 
-ENV UID=dc
-ENV GID=dc
+#ENV UID=dc
+#ENV GID=dc
 
-RUN useradd -r --create-home --home-dir $DC_HOME --groups $GID --shell /bin/bash $UID
+#RUN useradd -r --create-home --home-dir $DC_HOME --groups $GID --shell /bin/bash $UID
 
 #
 # Resources from build image
@@ -34,8 +34,8 @@ COPY target/data-collector-*.jar /opt/dc/lib/
 ADD docker/start-collector.sh /run.sh
 RUN chmod +x /run.sh
 
-COPY docker/entrypoint.bash /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+#COPY docker/entrypoint.bash /entrypoint.sh
+#RUN chmod +x /entrypoint.sh
 
 ENV PATH=/opt/jdk/bin:$PATH
 ENV JAVA_HOME=/opt/jdk
@@ -47,5 +47,5 @@ VOLUME ["/conf", "/certs"]
 EXPOSE 9990
 EXPOSE 9992
 
-ENTRYPOINT ["/entrypoint.sh"]
+#ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/run.sh"]
