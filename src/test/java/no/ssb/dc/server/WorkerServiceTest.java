@@ -48,7 +48,7 @@ public class WorkerServiceTest {
                 )
                 .function(paginate("page-loop")
                         .variable("fromPosition", "${nextPosition}")
-                        .addPageContent()
+                        .addPageContent("fromPosition")
                         .iterate(execute("page"))
                         .prefetchThreshold(5)
                         .until(whenVariableIsNull("nextPosition"))

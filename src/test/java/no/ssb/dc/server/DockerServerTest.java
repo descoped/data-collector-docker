@@ -78,7 +78,7 @@ public class DockerServerTest {
                 )
                 .function(paginate("loop")
                         .variable("fromPosition", "${nextPosition}")
-                        .addPageContent()
+                        .addPageContent("fromPosition")
                         .iterate(execute("page"))
                         .prefetchThreshold(15)
                         .until(whenVariableIsNull("nextPosition"))

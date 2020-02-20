@@ -25,6 +25,7 @@
       },
       "threshold" : 5,
       "addPageContent" : true,
+      "positionVariable" : "fromPosition",
       "iterate" : [ {
         "type" : "Execute",
         "executeId" : "page"
