@@ -54,7 +54,7 @@ public class WorkerServiceTest {
                         .until(whenVariableIsNull("nextPosition"))
                 )
                 .function(get("page")
-                        .url("${baseURL}/events?position=${fromPosition}&pageSize=10")
+                        .url("${baseURL}/api/events?position=${fromPosition}&pageSize=10")
                         .validate(status().success(200, 299).fail(300, 599))
                         .pipe(sequence(xpath("/feed/entry"))
                                 .expected(xpath("/entry/id"))
@@ -73,7 +73,7 @@ public class WorkerServiceTest {
                         .returnVariables("nextPosition")
                 )
                 .function(get("event-doc")
-                        .url("${baseURL}/events/${eventId}?type=event")
+                        .url("${baseURL}/api/events/${eventId}?type=event")
                         .pipe(addContent("${position}", "event-doc"))
                 );
 
