@@ -2,6 +2,15 @@ kind: pipeline
 name: default
 
 steps:
+  # Restore the cache if it exists
+  - name: restore-cache
+    image: homerovalle/drone-gcs-cache
+    settings:
+      pull: true
+      bucket: bip-drone-dependency-cache
+      json_key:
+        from_secret: gcs_credentials
+      restore: true
 
   - name: authenticate
     image: robertstettner/drone-mvn-auth
@@ -9,6 +18,15 @@ steps:
     settings:
       servers:
         from_secret: maven_servers
+      profiles:
+        - id: ssb-bip
+          repositories:
+            - id: ssb-bip-snapshots
+              url: https://nexus.prod-bip-ci.ssb.no/repository/maven-snapshots/
+              layout: default
+            - id: ssb-bip-releases
+              url: https://nexus.prod-bip-ci.ssb.no/repository/maven-releases/
+              layout: default
 
   - name: build
     image: maven:3-jdk-11
@@ -71,23 +89,6 @@ steps:
     depends_on:
       - test
 
-  - name: publish-maven
-    image: maven:3-jdk-11
-    commands:
-      - mvn clean deploy -P ssb-bip, -DskipTests=true --batch-mode --global-settings settings.xml
-    when:
-      ref:
-        - refs/heads/master
-        - refs/tags/*
-    environment:
-      MAVEN_HOME: /drone/src/.m2
-      M2_HOME: /drone/src/.m2
-    depends_on:
-      - code-analysis
-      - codacy
-      - codecov-plugin
-      - codecov-manual
-
   - name: slack
     image: plugins/slack
     settings:
@@ -97,7 +98,7 @@ steps:
     when:
       status: [ success, failure ]
     depends_on:
-      - publish-maven
+      - test
 
 ---
 kind: secret
