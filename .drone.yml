@@ -3,14 +3,14 @@ name: default
 
 steps:
   # Restore the cache if it exists
-  - name: restore-cache
-    image: homerovalle/drone-gcs-cache
-    settings:
-      pull: true
-      bucket: bip-drone-dependency-cache
-      json_key:
-        from_secret: gcs_credentials
-      restore: true
+#  - name: restore-cache
+#    image: homerovalle/drone-gcs-cache
+#    settings:
+#      pull: true
+#      bucket: bip-drone-dependency-cache
+#      json_key:
+#        from_secret: gcs_credentials
+#      restore: true
 
   - name: authenticate
     image: robertstettner/drone-mvn-auth
