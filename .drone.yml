@@ -145,7 +145,7 @@ steps:
   - name: data-collector
     image: plugins/gcr
     settings:
-      dockerfile: service/Dockerfile-dev
+      dockerfile: Dockerfile-dev
       repo: eu.gcr.io/prod-bip/data-collector
       registry: eu.gcr.io
       tags:
