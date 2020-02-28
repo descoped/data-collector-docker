@@ -154,7 +154,7 @@ steps:
       json_key:
         from_secret: gcr_credentials
     depends_on:
-      - build
+      - publish-maven
 
   - name: slack
     image: plugins/slack
