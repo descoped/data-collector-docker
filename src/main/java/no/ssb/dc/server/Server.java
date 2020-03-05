@@ -1,7 +1,9 @@
 package no.ssb.dc.server;
 
+import ch.qos.logback.classic.ClassicConstants;
 import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dc.application.server.UndertowApplication;
+import no.ssb.dc.core.util.JavaUtilLoggerBridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +15,15 @@ public class Server {
 
     public static void main(String[] args) {
         long now = System.currentTimeMillis();
+
+        String logbackConfigurationFile = System.getenv("LOGBACK_CONFIGURATION_FILE");
+        if (logbackConfigurationFile != null) {
+            System.setProperty(ClassicConstants.CONFIG_FILE_PROPERTY, logbackConfigurationFile);
+        }
+        JavaUtilLoggerBridge.installJavaUtilLoggerBridgeHandler();
+        if (logbackConfigurationFile != null) {
+            LOG.debug("Using logback configuration: {}" , logbackConfigurationFile);
+        }
 
         StoreBasedDynamicConfiguration.Builder configurationBuilder = new StoreBasedDynamicConfiguration.Builder()
                 .propertiesResource("application-defaults.properties")
@@ -38,7 +49,8 @@ public class Server {
                 .environment("DC_")
                 .systemProperties();
 
-        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configurationBuilder.build());
+        StoreBasedDynamicConfiguration configuration = configurationBuilder.build();
+        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration);
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {

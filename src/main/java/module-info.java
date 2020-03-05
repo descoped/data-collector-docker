@@ -16,6 +16,7 @@ module no.ssb.dc.server {
     requires jul_to_slf4j;
     requires ch.qos.logback.classic;
     requires ch.qos.logback.core;
+    requires logstash.logback.encoder;
     requires io.github.classgraph;
 
     requires undertow.core;

@@ -28,8 +28,9 @@ ENV PROXY_HTTPS_PORT=
 # Resources from build image
 #
 COPY --from=build /opt/jdk /opt/jdk/
-COPY target/dependency /opt/dc/lib/
-COPY target/data-collector-*.jar /opt/dc/lib/
+COPY target/dependency $DC_HOME/lib/
+COPY target/data-collector-*.jar $DC_HOME/lib/
+COPY target/classes/logback-stash.xml $DC_HOME/
 
 ADD docker/start-collector.sh /run.sh
 RUN chmod +x /run.sh

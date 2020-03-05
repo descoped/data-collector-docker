@@ -74,3 +74,6 @@ Follow these instructions for setting up profiling.
 1. Set port to 9992
 1. `make collect-freg-playground`
 
+### Logstash
+
+Set environment variable `LOGBACK_CONFIGURATION_FILE=/opt/dc/logback-stash.xml` to enable structured logging using Logstash.
