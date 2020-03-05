@@ -77,3 +77,5 @@ Follow these instructions for setting up profiling.
 ### Logstash
 
 Set environment variable `LOGBACK_CONFIGURATION_FILE=/opt/dc/logback-stash.xml` to enable structured logging using Logstash.
+
+.
