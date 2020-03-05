@@ -38,7 +38,7 @@
     "page" : {
       "type" : "Get",
       "id" : "page",
-      "url" : "${baseURL}/mock?seq=${fromPosition}&size=10",
+      "url" : "${baseURL}/api/events?position=${fromPosition}&pageSize=10",
       "positionProducerClass" : "no.ssb.dc.server.ServerTest$LongPositionProducer",
       "returnVariables" : [ "nextPosition" ],
       "responseValidators" : [ {
@@ -102,7 +102,7 @@
     "event-doc" : {
       "type" : "Get",
       "id" : "event-doc",
-      "url" : "${baseURL}/mock/${eventId}?type=event",
+      "url" : "${baseURL}/api/events/${eventId}?type=event",
       "pipes" : [ {
         "type" : "AddContent",
         "positionVariableExpression" : "${position}",

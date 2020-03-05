@@ -3,6 +3,7 @@ package no.ssb.dc.server;
 import no.ssb.dc.api.Specification;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.application.health.HealthResourceFactory;
+import no.ssb.dc.application.metrics.MetricsResourceFactory;
 import no.ssb.dc.server.service.WorkerService;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
@@ -37,7 +38,7 @@ public class WorkerServiceTest {
 
     @Test
     public void testWorkerService() throws InterruptedException {
-        WorkerService workerService = new WorkerService(testServer.getConfiguration(), HealthResourceFactory.create());
+        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create());
 
         SpecificationBuilder specificationBuilder = Specification.start("WORKER-TEST", "paginate mock service", "page-loop")
                 .configure(context()

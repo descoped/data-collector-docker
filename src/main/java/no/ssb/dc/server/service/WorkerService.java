@@ -4,6 +4,7 @@ import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.health.HealthResourceFactory;
+import no.ssb.dc.application.metrics.MetricsResourceFactory;
 import no.ssb.dc.application.spi.Service;
 import no.ssb.dc.core.executor.Worker;
 import no.ssb.dc.core.executor.WorkerObservable;
@@ -25,11 +26,13 @@ public class WorkerService implements Service {
     private static final Logger LOG = LoggerFactory.getLogger(WorkerService.class);
 
     private final DynamicConfiguration configuration;
+    private final MetricsResourceFactory metricsResourceFactory;
     private final HealthResourceFactory healthResourceFactory;
     private final WorkManager workManager = new WorkManager();
 
-    public WorkerService(DynamicConfiguration configuration, HealthResourceFactory healthResourceFactory) {
+    public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory) {
         this.configuration = configuration;
+        this.metricsResourceFactory = metricsResourceFactory;
         this.healthResourceFactory = healthResourceFactory;
     }
 
