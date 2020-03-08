@@ -11,6 +11,10 @@ module no.ssb.dc.server {
     requires no.ssb.rawdata.avro;
     requires no.ssb.rawdata.kafka;
 
+    requires java.instrument;
+
+    requires net.bytebuddy;
+    requires net.bytebuddy.agent;
     requires org.slf4j;
     requires com.fasterxml.jackson.databind;
     requires jul_to_slf4j;

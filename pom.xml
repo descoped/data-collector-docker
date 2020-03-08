@@ -340,6 +340,40 @@
                 <version>3.1.0</version>
             </plugin>
 
+            <!-- Create a module-info.class file. -->
+            <plugin>
+                <groupId>codes.rafael.modulemaker</groupId>
+                <artifactId>modulemaker-maven-plugin</artifactId>
+                <version>1.7</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm</artifactId>
+                        <version>7.3.1</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>inject-module</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <name>net.bytebuddy.agent</name>
+                    <multirelease>true</multirelease>
+                    <packages>net.bytebuddy.agent</packages>
+                    <exports>net.bytebuddy.agent</exports>
+                    <requires>java.instrument</requires>
+                    <static-requires>
+                        jdk.attach,
+                        com.sun.jna,
+                        com.sun.jna.platform
+                    </static-requires>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

@@ -23,8 +23,13 @@ then
   PROXY_OPTS="$PROXY_OPTS -Dhttps.proxyPort=$PROXY_HTTPS_PORT"
 fi
 
-echo "PROXY_OPTS=$PROXY_OPTS"
+if [ -n "$PROXY_OPTS" ]
+then
+  echo "PROXY_OPTS=$PROXY_OPTS"
+fi
 
 DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -Dcom.sun.management.jmxremote.rmi.port=9992 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.port=9992 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false -Djava.rmi.server.hostname=localhost"
 
-java $PROXY_OPTS $DEFAULT_OPTS -p /opt/dc/lib -m no.ssb.dc.server/no.ssb.dc.server.Server
+BYTE_BUDDY_AGENT_JAR=$(find /opt/dc/lib/ -type f -iname 'byte-buddy-agent*')
+
+java --add-reads no.ssb.dc.core=ALL-UNNAMED --add-opens no.ssb.dc.core/no.ssb.dc.core=ALL-UNNAMED $PROXY_OPTS $DEFAULT_OPTS -XX:+StartAttachListener -javaagent:$BYTE_BUDDY_AGENT_JAR -p /opt/dc/lib -m no.ssb.dc.server/no.ssb.dc.server.Server
