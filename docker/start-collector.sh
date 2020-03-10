@@ -7,8 +7,6 @@ JPMS_SWITCHES="
   --add-reads no.ssb.dc.content.rawdata=no.ssb.dc.core
 "
 
-# test: PROXY_HTTP_HOST=localhost PROXY_HTTP_PORT=10000 ./start-collector.sh
-
 if [ -n "$PROXY_HTTP_HOST" ]
 then
   PROXY_OPTS="-Dhttp.proxyHost=$PROXY_HTTP_HOST"
@@ -34,8 +32,23 @@ then
   echo "PROXY_OPTS=$PROXY_OPTS"
 fi
 
-DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -Dcom.sun.management.jmxremote.rmi.port=9992 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.port=9992 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false -Djava.rmi.server.hostname=localhost"
+if [ "$ENABLE_JMX_REMOTE_DEBUGGING"  = true ]
+then
+  JMX_REMOTE_OPTS="
+    -Dcom.sun.management.jmxremote.rmi.port=9992
+    -Dcom.sun.management.jmxremote=true
+    -Dcom.sun.management.jmxremote.port=9992
+    -Dcom.sun.management.jmxremote.ssl=false
+    -Dcom.sun.management.jmxremote.authenticate=false
+    -Dcom.sun.management.jmxremote.local.only=false
+    -Djava.rmi.server.hostname=localhost
+  "
+else
+  JMX_REMOTE_OPTS=""
+fi
 
-BYTE_BUDDY_AGENT_JAR=$(find /opt/dc/lib/ -type f -iname 'byte-buddy-agent*')
+DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI"
 
-java $JPMS_SWITCHES $PROXY_OPTS $DEFAULT_OPTS -XX:+StartAttachListener -javaagent:$BYTE_BUDDY_AGENT_JAR -p /opt/dc/lib -m no.ssb.dc.server/no.ssb.dc.server.Server
+JAVA_AGENT_OPTS="-XX:+StartAttachListener -javaagent:$(find /opt/dc/lib/ -type f -iname 'byte-buddy-agent*')"
+
+java $JPMS_SWITCHES $PROXY_OPTS $DEFAULT_OPTS $JMX_REMOTE_OPTS $JAVA_AGENT_OPTS -p /opt/dc/lib -m no.ssb.dc.server/no.ssb.dc.server.Server
