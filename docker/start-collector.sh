@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -e
 
+JPMS_SWITCHES="
+  --add-reads no.ssb.dc.core=ALL-UNNAMED
+  --add-opens no.ssb.dc.core/no.ssb.dc.core=ALL-UNNAMED
+  --add-reads no.ssb.dc.content.rawdata=no.ssb.dc.core
+"
+
 # test: PROXY_HTTP_HOST=localhost PROXY_HTTP_PORT=10000 ./start-collector.sh
 
 if [ -n "$PROXY_HTTP_HOST" ]
@@ -32,4 +38,4 @@ DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -Dcom.sun.manage
 
 BYTE_BUDDY_AGENT_JAR=$(find /opt/dc/lib/ -type f -iname 'byte-buddy-agent*')
 
-java --add-reads no.ssb.dc.core=ALL-UNNAMED --add-opens no.ssb.dc.core/no.ssb.dc.core=ALL-UNNAMED $PROXY_OPTS $DEFAULT_OPTS -XX:+StartAttachListener -javaagent:$BYTE_BUDDY_AGENT_JAR -p /opt/dc/lib -m no.ssb.dc.server/no.ssb.dc.server.Server
+java $JPMS_SWITCHES $PROXY_OPTS $DEFAULT_OPTS -XX:+StartAttachListener -javaagent:$BYTE_BUDDY_AGENT_JAR -p /opt/dc/lib -m no.ssb.dc.server/no.ssb.dc.server.Server
