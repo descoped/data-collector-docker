@@ -1,14 +1,17 @@
 package no.ssb.dc.server;
 
+import net.bytebuddy.agent.ByteBuddyAgent;
 import no.ssb.dc.api.Specification;
 import no.ssb.dc.api.http.HttpStatusCode;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.core.executor.Worker;
+import no.ssb.dc.core.metrics.MetricsAgent;
 import no.ssb.dc.test.client.ResponseHelper;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
 import no.ssb.dc.test.server.TestServerExtension;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +45,11 @@ public class DockerServerTest {
 
     @Inject
     TestClient client;
+
+    @BeforeAll
+    static void beforeAll() {
+        MetricsAgent.premain(null, ByteBuddyAgent.install());
+    }
 
     @Test
     public void testPingServer() {

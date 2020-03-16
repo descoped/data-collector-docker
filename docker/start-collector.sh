@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -e
 
-# test: PROXY_HTTP_HOST=localhost PROXY_HTTP_PORT=10000 ./start-collector.sh
+JPMS_SWITCHES="
+  --add-reads no.ssb.dc.core=ALL-UNNAMED
+  --add-opens no.ssb.dc.core/no.ssb.dc.core=ALL-UNNAMED
+  --add-reads no.ssb.dc.content.rawdata=no.ssb.dc.core
+"
 
 if [ -n "$PROXY_HTTP_HOST" ]
 then
@@ -23,8 +27,28 @@ then
   PROXY_OPTS="$PROXY_OPTS -Dhttps.proxyPort=$PROXY_HTTPS_PORT"
 fi
 
-echo "PROXY_OPTS=$PROXY_OPTS"
+if [ -n "$PROXY_OPTS" ]
+then
+  echo "PROXY_OPTS=$PROXY_OPTS"
+fi
 
-DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -Dcom.sun.management.jmxremote.rmi.port=9992 -Dcom.sun.management.jmxremote=true -Dcom.sun.management.jmxremote.port=9992 -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.local.only=false -Djava.rmi.server.hostname=localhost"
+if [ "$ENABLE_JMX_REMOTE_DEBUGGING"  = true ]
+then
+  JMX_REMOTE_OPTS="
+    -Dcom.sun.management.jmxremote.rmi.port=9992
+    -Dcom.sun.management.jmxremote=true
+    -Dcom.sun.management.jmxremote.port=9992
+    -Dcom.sun.management.jmxremote.ssl=false
+    -Dcom.sun.management.jmxremote.authenticate=false
+    -Dcom.sun.management.jmxremote.local.only=false
+    -Djava.rmi.server.hostname=localhost
+  "
+else
+  JMX_REMOTE_OPTS=""
+fi
 
-java $PROXY_OPTS $DEFAULT_OPTS -p /opt/dc/lib -m no.ssb.dc.server/no.ssb.dc.server.Server
+DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI"
+
+JAVA_AGENT_OPTS="-XX:+StartAttachListener -javaagent:$(find /opt/dc/lib/ -type f -iname 'byte-buddy-agent*')"
+
+java $JPMS_SWITCHES $PROXY_OPTS $DEFAULT_OPTS $JMX_REMOTE_OPTS $JAVA_AGENT_OPTS -p /opt/dc/lib -m no.ssb.dc.server/no.ssb.dc.server.Server

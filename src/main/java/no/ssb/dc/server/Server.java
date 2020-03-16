@@ -1,8 +1,10 @@
 package no.ssb.dc.server;
 
 import ch.qos.logback.classic.ClassicConstants;
+import net.bytebuddy.agent.ByteBuddyAgent;
 import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dc.application.server.UndertowApplication;
+import no.ssb.dc.core.metrics.MetricsAgent;
 import no.ssb.dc.core.util.JavaUtilLoggerBridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +16,7 @@ public class Server {
     private static final ConfigurationOverride configurationOverride = ConfigurationOverride.NONE;
 
     public static void main(String[] args) {
+        MetricsAgent.premain(null, ByteBuddyAgent.install());
         long now = System.currentTimeMillis();
 
         String logbackConfigurationFile = System.getenv("LOGBACK_CONFIGURATION_FILE");
