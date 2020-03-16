@@ -87,7 +87,11 @@ public class WorkManager {
 
     void remove(UUID workerId) {
         JobId jobId = workerFutures.keySet().stream().filter(key -> key.workerId.equals(workerId)).findFirst().orElseThrow();
-        workerFutures.remove(jobId);
+        if (workerFutures.remove(jobId) != null) {
+            LOG.info("Removed Worker: {}", workerId);
+        } else {
+            LOG.error("Unable to remove Worker: {}", workerId);
+        }
     }
 
     void cancel() {
