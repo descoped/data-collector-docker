@@ -72,6 +72,7 @@ public class WorkerServiceTest {
             );
     @Inject
     TestClient client;
+
     @Inject
     TestServer testServer;
 

@@ -7,33 +7,27 @@ JPMS_SWITCHES="
   --add-reads no.ssb.dc.content.rawdata=no.ssb.dc.core
 "
 
-if [ -n "$PROXY_HTTP_HOST" ]
-then
+if [ -n "$PROXY_HTTP_HOST" ]; then
   PROXY_OPTS="-Dhttp.proxyHost=$PROXY_HTTP_HOST"
 fi
 
-if [ -n "$PROXY_HTTP_PORT" ]
-then
+if [ -n "$PROXY_HTTP_PORT" ]; then
   PROXY_OPTS="$PROXY_OPTS -Dhttp.proxyPort=$PROXY_HTTP_PORT"
 fi
 
-if [ -n "$PROXY_HTTPS_HOST" ]
-then
+if [ -n "$PROXY_HTTPS_HOST" ]; then
   PROXY_OPTS="-Dhttps.proxyHost=$PROXY_HTTPS_HOST"
 fi
 
-if [ -n "$PROXY_HTTPS_PORT" ]
-then
+if [ -n "$PROXY_HTTPS_PORT" ]; then
   PROXY_OPTS="$PROXY_OPTS -Dhttps.proxyPort=$PROXY_HTTPS_PORT"
 fi
 
-if [ -n "$PROXY_OPTS" ]
-then
+if [ -n "$PROXY_OPTS" ]; then
   echo "PROXY_OPTS=$PROXY_OPTS"
 fi
 
-if [ "$ENABLE_JMX_REMOTE_DEBUGGING"  = true ]
-then
+if [ "$ENABLE_JMX_REMOTE_DEBUGGING" = true ]; then
   JMX_REMOTE_OPTS="
     -Dcom.sun.management.jmxremote.rmi.port=9992
     -Dcom.sun.management.jmxremote=true

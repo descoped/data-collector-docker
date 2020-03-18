@@ -381,6 +381,7 @@
                 <configuration>
                     <argLine>
                         --illegal-access=deny
+                        --add-reads no.ssb.dc.content.rawdata=no.ssb.dc.core
                         -Xmx1500m
                     </argLine>
                 </configuration>
