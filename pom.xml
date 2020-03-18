@@ -382,6 +382,7 @@
                     <argLine>
                         --illegal-access=deny
                         --add-reads no.ssb.dc.content.rawdata=no.ssb.dc.core
+                        --add-exports no.ssb.rawdata.postgres/no.ssb.rawdata.provider.postgres=no.ssb.service.provider.api,no.ssb.dc.server
                         -Xmx1500m
                     </argLine>
                 </configuration>
