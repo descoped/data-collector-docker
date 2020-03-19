@@ -30,7 +30,7 @@ import static no.ssb.dc.api.Builders.xpath;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(TestServerExtension.class)
-public class WorkerServiceTest {
+class WorkerServiceTest {
 
     static final BiFunction<String, String, SpecificationBuilder> specificationBuilderSupplier = (baseURL, failAtQueryString) -> Specification.start("WORKER-TEST", "paginate mock service", "page-loop")
             .configure(context()
@@ -54,7 +54,7 @@ public class WorkerServiceTest {
                             .expected(xpath("/entry/id"))
                     )
                     .pipe(nextPage()
-                            .output("nextPosition", regex(xpath("/feed/link[@rel=\"next\"]/@href"), "(?<=[?&]seq=)[^&]*"))
+                            .output("nextPosition", regex(xpath("/feed/link[@rel=\"next\"]/@href"), "(?<=[?&]position=)[^&]*"))
                     )
                     .pipe(parallel(xpath("/feed/entry"))
                             .variable("position", xpath("/entry/id"))
@@ -77,7 +77,7 @@ public class WorkerServiceTest {
     TestServer testServer;
 
     @Test
-    public void testWorkerService() throws InterruptedException {
+    void testWorkerService() throws InterruptedException {
         WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create());
 
         SpecificationBuilder specificationBuilder = specificationBuilderSupplier.apply(testServer.testURL(""), "");
@@ -92,7 +92,7 @@ public class WorkerServiceTest {
     }
 
     @Test
-    public void testWorkerServiceWithFailAt() throws InterruptedException {
+    void testWorkerServiceWithFailAt() throws InterruptedException {
         WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create());
 
         SpecificationBuilder specificationBuilder = specificationBuilderSupplier.apply(testServer.testURL(""), "&failWithStatusCode=404&failAt=1005");
@@ -106,12 +106,12 @@ public class WorkerServiceTest {
     }
 
     @Test
-    public void testServiceAlive() {
+    void testServiceAlive() {
         client.get("/health/alive").expect200Ok();
     }
 
     @Test
-    public void testServiceReady() {
+    void testServiceReady() {
         client.get("/health/ready").expect200Ok();
     }
 }
