@@ -29,11 +29,17 @@ public class WorkerService implements Service {
     private final MetricsResourceFactory metricsResourceFactory;
     private final HealthResourceFactory healthResourceFactory;
     private final WorkManager workManager = new WorkManager();
+    private final boolean suppressVerboseLogging;
 
     public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory) {
+        this(configuration, metricsResourceFactory, healthResourceFactory, false);
+    }
+
+    public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory, boolean suppressVerboseLogging) {
         this.configuration = configuration;
         this.metricsResourceFactory = metricsResourceFactory;
         this.healthResourceFactory = healthResourceFactory;
+        this.suppressVerboseLogging = suppressVerboseLogging;
     }
 
     private void onWorkerStart(WorkerObservable observable) {
@@ -80,9 +86,13 @@ public class WorkerService implements Service {
             Worker.WorkerBuilder workerBuilder = Worker.newBuilder()
                     .configuration(configuration.asMap())
                     .workerObserver(new WorkerObserver(this::onWorkerStart, this::onWorkerFinish))
-                    .specification(specificationBuilder)
-                    .printConfiguration()
-                    .printExecutionPlan();
+                    .specification(specificationBuilder);
+
+            if (!suppressVerboseLogging) {
+                workerBuilder
+                        .printConfiguration()
+                        .printExecutionPlan();
+            }
 
             String configuredCertBundlesPath = configuration.evaluateToString("data.collector.certs.directory");
             Path certBundlesPath = configuredCertBundlesPath == null ? CommonUtils.currentPath() : Paths.get(configuredCertBundlesPath);
