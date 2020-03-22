@@ -1,0 +1,14 @@
+@startuml
+hide footbox
+
+' participants
+
+participant "WorkerService" as ws
+participant "HealthFactory" as hf
+participant "WorkManager" as wm
+participant "Worker" as w
+participant "WorkerObserver" as wo
+
+
+
+@enduml

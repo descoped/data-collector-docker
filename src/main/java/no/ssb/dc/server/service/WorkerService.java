@@ -19,7 +19,10 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class WorkerService implements Service {
 
@@ -30,43 +33,65 @@ public class WorkerService implements Service {
     private final HealthResourceFactory healthResourceFactory;
     private final WorkManager workManager = new WorkManager();
     private final boolean suppressVerboseLogging;
+    private final WorkerObserver workerObserver;
+    private final Consumer<WorkerLifecycleCallback> workerLifecycleCallback;
 
     public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory) {
-        this(configuration, metricsResourceFactory, healthResourceFactory, false);
+        this(configuration, metricsResourceFactory, healthResourceFactory, false, null);
     }
 
-    public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory, boolean suppressVerboseLogging) {
+    public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory,
+                         boolean suppressVerboseLogging, Consumer<WorkerLifecycleCallback> workerLifecycleCallback) {
         this.configuration = configuration;
         this.metricsResourceFactory = metricsResourceFactory;
         this.healthResourceFactory = healthResourceFactory;
         this.suppressVerboseLogging = suppressVerboseLogging;
+        this.workerLifecycleCallback = workerLifecycleCallback;
+        this.workerObserver = new WorkerObserver(this::onWorkerStart, this::onWorkerFinish);
     }
 
-    private void onWorkerStart(WorkerObservable observable) {
+    void onWorkerStart(WorkerObservable observable) {
+        Optional<Consumer<WorkerLifecycleCallback>> workerLifecycleConsumer = Optional.ofNullable(this.workerLifecycleCallback);
+        AtomicReference<WorkerStatus> workerStatus = new AtomicReference<>(WorkerStatus.RUNNING);
+
+        workerLifecycleConsumer.ifPresent(callback -> callback.accept(new WorkerLifecycleCallback(WorkerLifecycleCallback.Kind.ON_START_BEFORE_TRY_LOCK, workManager, observable, workerStatus.get())));
         workManager.lock(observable.specificationId());
+        workerLifecycleConsumer.ifPresent(callback -> callback.accept(new WorkerLifecycleCallback(WorkerLifecycleCallback.Kind.ON_START_AFTER_TRY_LOCK, workManager, observable, workerStatus.get())));
         try {
             LOG.info("Start worker: {}", observable.workerId());
             HealthWorkerResource healthWorkerResource = healthResourceFactory.createAndAdddHealthResource(observable.workerId(), HealthWorkerResource.class);
             observable.context().services().register(HealthWorkerMonitor.class, healthWorkerResource.getMonitor());
+            workerStatus.set(healthWorkerResource.getMonitor().status());
         } finally {
+            workerLifecycleConsumer.ifPresent(callback -> callback.accept(new WorkerLifecycleCallback(WorkerLifecycleCallback.Kind.ON_START_BEFORE_UNLOCK, workManager, observable, workerStatus.get())));
             workManager.unlock(observable.specificationId());
+            workerLifecycleConsumer.ifPresent(callback -> callback.accept(new WorkerLifecycleCallback(WorkerLifecycleCallback.Kind.ON_START_AFTER_UNLOCK, workManager, observable, workerStatus.get())));
         }
     }
 
-    private void onWorkerFinish(WorkerObservable observable, WorkerStatus status) {
+    void onWorkerFinish(WorkerObservable observable, WorkerStatus status) {
+        Optional<Consumer<WorkerLifecycleCallback>> workerLifecycleConsumer = Optional.ofNullable(this.workerLifecycleCallback);
+
+        workerLifecycleConsumer.ifPresent(callback -> callback.accept(new WorkerLifecycleCallback(WorkerLifecycleCallback.Kind.ON_FINISH_BEFORE_TRY_LOCK, workManager, observable, status)));
         workManager.lock(observable.specificationId());
+        workerLifecycleConsumer.ifPresent(callback -> callback.accept(new WorkerLifecycleCallback(WorkerLifecycleCallback.Kind.ON_FINISH_AFTER_TRY_LOCK, workManager, observable, status)));
         try {
             if (status == WorkerStatus.COMPLETED) {
                 LOG.info("Completed worker: [{}] {}", status, observable.workerId());
             } else {
                 LOG.error("Completed worker: [{}] {}", status, observable.workerId());
             }
+            workerLifecycleConsumer.ifPresent(callback -> callback.accept(new WorkerLifecycleCallback(WorkerLifecycleCallback.Kind.ON_FINISH_BEFORE_REMOVE_WORKER, workManager, observable, status)));
             workManager.remove(observable.workerId());
+            workerLifecycleConsumer.ifPresent(callback -> callback.accept(new WorkerLifecycleCallback(WorkerLifecycleCallback.Kind.ON_FINISH_AFTER_REMOVE_WORKER, workManager, observable, status)));
+
             HealthWorkerResource healthWorkerResource = healthResourceFactory.getHealthResource(observable.workerId());
             healthResourceFactory.removeHealthResource(observable.workerId());
             healthResourceFactory.getHealthResource(HealthWorkerHistoryResource.class).add(healthWorkerResource);
         } finally {
+            workerLifecycleConsumer.ifPresent(callback -> callback.accept(new WorkerLifecycleCallback(WorkerLifecycleCallback.Kind.ON_FINISH_BEFORE_UNLOCK, workManager, observable, status)));
             workManager.unlock(observable.specificationId());
+            workerLifecycleConsumer.ifPresent(callback -> callback.accept(new WorkerLifecycleCallback(WorkerLifecycleCallback.Kind.ON_FINISH_AFTER_UNLOCK, workManager, observable, status)));
         }
     }
 
@@ -85,7 +110,7 @@ public class WorkerService implements Service {
 
             Worker.WorkerBuilder workerBuilder = Worker.newBuilder()
                     .configuration(configuration.asMap())
-                    .workerObserver(new WorkerObserver(this::onWorkerStart, this::onWorkerFinish))
+                    .workerObserver(workerObserver)
                     .specification(specificationBuilder);
 
             if (!suppressVerboseLogging) {

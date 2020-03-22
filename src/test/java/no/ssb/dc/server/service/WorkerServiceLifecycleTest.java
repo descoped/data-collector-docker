@@ -1,33 +1,27 @@
 package no.ssb.dc.server.service;
 
-import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.Specification;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
-import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.health.HealthApplicationMonitor;
 import no.ssb.dc.application.health.HealthApplicationResource;
 import no.ssb.dc.application.health.HealthConfigResource;
 import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.application.metrics.MetricsResourceFactory;
-import no.ssb.dc.core.executor.Worker;
-import no.ssb.dc.core.executor.WorkerObservable;
-import no.ssb.dc.core.executor.WorkerObserver;
-import no.ssb.dc.core.executor.WorkerStatus;
-import no.ssb.dc.core.health.HealthWorkerHistoryResource;
-import no.ssb.dc.core.health.HealthWorkerMonitor;
-import no.ssb.dc.core.health.HealthWorkerResource;
 import no.ssb.dc.test.server.TestServer;
 import no.ssb.dc.test.server.TestServerExtension;
 import no.ssb.dc.test.server.TestServerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -46,6 +40,7 @@ import static no.ssb.dc.api.Builders.sequence;
 import static no.ssb.dc.api.Builders.status;
 import static no.ssb.dc.api.Builders.whenVariableIsNull;
 import static no.ssb.dc.api.Builders.xpath;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(TestServerExtension.class)
 class WorkerServiceLifecycleTest {
@@ -53,6 +48,8 @@ class WorkerServiceLifecycleTest {
     static final Logger LOG = LoggerFactory.getLogger(WorkerServiceLifecycleTest.class);
 
     static final Predicate<Task> isSpecificationRunning = task -> task.workerService.list().stream().anyMatch(job -> task.specificationBuilder.getId().equals(job.specificationId));
+
+    static final Map<WorkerLifecycleCallback.Kind, AtomicInteger> lifecycleCounter = new ConcurrentHashMap<>();
 
     static SpecificationBuilder createSpecificationBuilder(TestServer testServer, String listQueryString, String eventQueryString) {
         return Specification.start("WORKER-TEST", "paginate mock service", "page-loop")
@@ -103,7 +100,7 @@ class WorkerServiceLifecycleTest {
         HealthApplicationMonitor applicationMonitor = healthResourceFactory.getHealthResource(HealthApplicationResource.class).getMonitor();
         applicationMonitor.setServerStatus(HealthApplicationMonitor.ServerStatus.RUNNING);
 
-        TestWorkerService workerService = new TestWorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), healthResourceFactory);
+        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), healthResourceFactory, true, WorkerServiceLifecycleTest::workerLifecycleCallback);
 
         if (false) {
             return Stream.of(new Task(workerService, createSpecificationBuilder(testServer, "&stopAt=1000", "?failWithStatusCode=404&failAt=1105"), true));
@@ -160,32 +157,67 @@ class WorkerServiceLifecycleTest {
         );
     }
 
-//    @Disabled
+    static void workerLifecycleCallback(WorkerLifecycleCallback workerLifecycleCallback) {
+        LOG.trace("[{}] - workerId: {} - specId: {} - workerListSize: {} - status: {}",
+                workerLifecycleCallback.kind,
+                workerLifecycleCallback.workerObservable.workerId(),
+                workerLifecycleCallback.workerObservable.specificationId(),
+                workerLifecycleCallback.workManager.list().size(),
+                workerLifecycleCallback.workerStatus
+        );
+
+        lifecycleCounter.get(workerLifecycleCallback.kind).incrementAndGet();
+    }
+
+    @BeforeAll
+    static void beforeAll() {
+        List.of(WorkerLifecycleCallback.Kind.values()).forEach(key -> lifecycleCounter.computeIfAbsent(key, counter -> new AtomicInteger()));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        Map.Entry<WorkerLifecycleCallback.Kind, AtomicInteger> lastCounter = null;
+        for (Map.Entry<WorkerLifecycleCallback.Kind, AtomicInteger> counter : lifecycleCounter.entrySet()) {
+            if (lastCounter == null) {
+                lastCounter = counter;
+                continue;
+            }
+            assertEquals(lastCounter.getValue().get(), counter.getValue().get(), counter.getKey().name());
+        }
+    }
+
+    @Disabled
     @ParameterizedTest
     @MethodSource("specificationBuilderProvider")
     void testSpecificationWorkerLifecycle(Task task) throws InterruptedException {
         String workerId = task.workerService.createOrRejectTask(task.specificationBuilder);
 
+        int n = 0;
         if (task.waitForCompletion) {
             while (isSpecificationRunning.test(task)) {
+                if (n > 25) {
+                    throw new RuntimeException("WorkerObserver.finish was not called! The worker has not been completed.");
+                }
                 TimeUnit.MILLISECONDS.sleep(250);
-                LOG.trace("{}: Running...", task.index);
+                LOG.trace("{}: Running... ON_START_BEFORE_TRY_LOCK: {}, ON_FINISH_AFTER_UNLOCK: {}", task.index,
+                        lifecycleCounter.get(WorkerLifecycleCallback.Kind.ON_START_BEFORE_TRY_LOCK).get(),
+                        lifecycleCounter.get(WorkerLifecycleCallback.Kind.ON_FINISH_AFTER_UNLOCK).get()
+                );
+                n++;
             }
-            if (task.workerService.list().isEmpty()) {
-                System.exit(1);
-            }
+
             LOG.trace("Done");
         }
     }
 
     static class Task {
         static final AtomicInteger count = new AtomicInteger(0);
-        final TestWorkerService workerService;
+        final WorkerService workerService;
         final SpecificationBuilder specificationBuilder;
         final boolean waitForCompletion;
         final int index;
 
-        Task(TestWorkerService workerService, SpecificationBuilder specificationBuilder, boolean waitForCompletion) {
+        Task(WorkerService workerService, SpecificationBuilder specificationBuilder, boolean waitForCompletion) {
             this.workerService = workerService;
             this.specificationBuilder = specificationBuilder;
             this.waitForCompletion = waitForCompletion;
@@ -193,84 +225,5 @@ class WorkerServiceLifecycleTest {
         }
     }
 
-    static class TestWorkerService {
-
-        private final DynamicConfiguration configuration;
-        private final MetricsResourceFactory metricsResourceFactory;
-        private final HealthResourceFactory healthResourceFactory;
-        private final WorkManager workManager = new WorkManager();
-
-        TestWorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory) {
-            this.configuration = configuration;
-            this.metricsResourceFactory = metricsResourceFactory;
-            this.healthResourceFactory = healthResourceFactory;
-        }
-
-        String createOrRejectTask(SpecificationBuilder specificationBuilder) {
-            if ("".equals(specificationBuilder.getId())) {
-                LOG.warn("The specification id is empty!");
-                return null;
-            }
-
-            workManager.lock(specificationBuilder.getId());
-            try {
-                if (workManager.isRunning(specificationBuilder.getId())) {
-                    LOG.warn("The specification '{}' is already running!", specificationBuilder.getId());
-                    return null;
-                }
-
-                Worker.WorkerBuilder workerBuilder = Worker.newBuilder()
-                        .configuration(configuration.asMap())
-                        .workerObserver(new WorkerObserver(this::onWorkerStart, this::onWorkerFinish))
-                        .specification(specificationBuilder);
-
-                String configuredCertBundlesPath = configuration.evaluateToString("data.collector.certs.directory");
-                Path certBundlesPath = configuredCertBundlesPath == null ? CommonUtils.currentPath() : Paths.get(configuredCertBundlesPath);
-                workerBuilder.buildCertificateFactory(certBundlesPath);
-
-                return workManager.run(workerBuilder).workerId.toString();
-            } finally {
-                workManager.unlock(specificationBuilder.getId());
-            }
-        }
-
-        public List<WorkManager.Task> list() {
-            return workManager.list();
-        }
-
-        void onWorkerStart(WorkerObservable observable) {
-            workManager.lock(observable.specificationId());
-            try {
-                LOG.info("Start worker: {}", observable.workerId());
-                HealthWorkerResource healthWorkerResource = healthResourceFactory.createAndAdddHealthResource(observable.workerId(), HealthWorkerResource.class);
-                observable.context().services().register(HealthWorkerMonitor.class, healthWorkerResource.getMonitor());
-            } finally {
-                workManager.unlock(observable.specificationId());
-            }
-
-        }
-
-        void onWorkerFinish(WorkerObservable observable, WorkerStatus status) {
-            workManager.lock(observable.specificationId());
-            try {
-                if (status == WorkerStatus.COMPLETED) {
-                    LOG.info("Completed worker: [{}] {}", status, observable.workerId());
-                } else {
-                    LOG.error("Completed worker: [{}] {}", status, observable.workerId());
-                }
-                workManager.remove(observable.workerId());
-                HealthWorkerResource healthWorkerResource = healthResourceFactory.getHealthResource(observable.workerId());
-                healthResourceFactory.removeHealthResource(observable.workerId());
-                healthResourceFactory.getHealthResource(HealthWorkerHistoryResource.class).add(healthWorkerResource);
-            } catch (Exception e) {
-                LOG.error("------------------------------------------------------------------------------------------------------------------------------ {}", CommonUtils.captureStackTrace(e));
-                //System.exit(-1);
-                throw e;
-            } finally {
-                workManager.unlock(observable.specificationId());
-            }
-
-        }
-    }
 
 }
