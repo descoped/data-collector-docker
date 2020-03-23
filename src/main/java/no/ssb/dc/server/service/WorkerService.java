@@ -32,20 +32,20 @@ public class WorkerService implements Service {
     private final MetricsResourceFactory metricsResourceFactory;
     private final HealthResourceFactory healthResourceFactory;
     private final WorkManager workManager = new WorkManager();
-    private final boolean suppressVerboseLogging;
+    private final boolean printExecutionPlan;
     private final WorkerObserver workerObserver;
     private final Consumer<WorkerLifecycleCallback> workerLifecycleCallback;
 
     public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory) {
-        this(configuration, metricsResourceFactory, healthResourceFactory, false, null);
+        this(configuration, metricsResourceFactory, healthResourceFactory, configuration.evaluateToBoolean("data.collector.print-execution-plan"), null);
     }
 
     public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory,
-                         boolean suppressVerboseLogging, Consumer<WorkerLifecycleCallback> workerLifecycleCallback) {
+                         boolean printExecutionPlan, Consumer<WorkerLifecycleCallback> workerLifecycleCallback) {
         this.configuration = configuration;
         this.metricsResourceFactory = metricsResourceFactory;
         this.healthResourceFactory = healthResourceFactory;
-        this.suppressVerboseLogging = suppressVerboseLogging;
+        this.printExecutionPlan = printExecutionPlan;
         this.workerLifecycleCallback = workerLifecycleCallback;
         this.workerObserver = new WorkerObserver(this::onWorkerStart, this::onWorkerFinish);
     }
@@ -113,7 +113,7 @@ public class WorkerService implements Service {
                     .workerObserver(workerObserver)
                     .specification(specificationBuilder);
 
-            if (!suppressVerboseLogging) {
+            if (printExecutionPlan) {
                 workerBuilder
                         .printConfiguration()
                         .printExecutionPlan();

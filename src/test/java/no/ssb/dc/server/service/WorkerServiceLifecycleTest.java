@@ -100,7 +100,7 @@ class WorkerServiceLifecycleTest {
         HealthApplicationMonitor applicationMonitor = healthResourceFactory.getHealthResource(HealthApplicationResource.class).getMonitor();
         applicationMonitor.setServerStatus(HealthApplicationMonitor.ServerStatus.RUNNING);
 
-        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), healthResourceFactory, true, WorkerServiceLifecycleTest::workerLifecycleCallback);
+        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), healthResourceFactory, false, WorkerServiceLifecycleTest::workerLifecycleCallback);
 
         if (false) {
             return Stream.of(new Task(workerService, createSpecificationBuilder(testServer, "&stopAt=1000", "?failWithStatusCode=404&failAt=1105"), true));
