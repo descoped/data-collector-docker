@@ -14,6 +14,7 @@ RUN apk add --no-cache bash su-exec curl openssl
 
 ENV DC_HOME=/opt/dc
 
+ENV JAVA_OPTS=
 ENV PROXY_HTTP_HOST=
 ENV PROXY_HTTP_PORT=
 ENV PROXY_HTTPS_HOST=

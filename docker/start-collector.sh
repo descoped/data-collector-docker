@@ -7,6 +7,10 @@ JPMS_SWITCHES="
   --add-reads no.ssb.dc.content.rawdata=no.ssb.dc.core
 "
 
+if [ -n "$JAVA_OPTS" ]; then
+  echo "JAVA_OPTS: $JAVA_OPTS"
+fi
+
 if [ -n "$PROXY_HTTP_HOST" ]; then
   PROXY_OPTS="-Dhttp.proxyHost=$PROXY_HTTP_HOST"
 fi
@@ -45,4 +49,4 @@ DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI"
 
 JAVA_AGENT_OPTS="-XX:+StartAttachListener -javaagent:$(find /opt/dc/lib/ -type f -iname 'byte-buddy-agent*')"
 
-java $JPMS_SWITCHES $PROXY_OPTS $DEFAULT_OPTS $JMX_REMOTE_OPTS $JAVA_AGENT_OPTS -p /opt/dc/lib -m no.ssb.dc.server/no.ssb.dc.server.Server
+java $JPMS_SWITCHES $JAVA_OPTS $PROXY_OPTS $DEFAULT_OPTS $JMX_REMOTE_OPTS $JAVA_AGENT_OPTS -p /opt/dc/lib -m no.ssb.dc.server/no.ssb.dc.server.Server
