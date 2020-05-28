@@ -3,7 +3,7 @@ package no.ssb.dc.server.controller;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import no.ssb.dc.api.Specification;
-import no.ssb.dc.api.http.HttpStatusCode;
+import no.ssb.dc.api.http.HttpStatus;
 import no.ssb.dc.api.http.Request;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.JsonParser;
@@ -74,7 +74,7 @@ public class TaskController implements Controller {
         exchange.getRequestReceiver().receiveFullString((httpServerExchange, payload) -> {
             SpecificationBuilder specificationBuilder = Specification.deserialize(payload);
             String workerId = workerService.createOrRejectTask(specificationBuilder);
-            int statusCode = workerId != null ? HttpStatusCode.HTTP_CREATED.statusCode() : HttpStatusCode.HTTP_CONFLICT.statusCode();
+            int statusCode = workerId != null ? HttpStatus.HTTP_CREATED.code() : HttpStatus.HTTP_CONFLICT.code();
             exchange.setStatusCode(statusCode);
         });
     }

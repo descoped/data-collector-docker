@@ -2,7 +2,7 @@ package no.ssb.dc.server;
 
 import net.bytebuddy.agent.ByteBuddyAgent;
 import no.ssb.dc.api.Specification;
-import no.ssb.dc.api.http.HttpStatusCode;
+import no.ssb.dc.api.http.HttpStatus;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.core.executor.Worker;
@@ -66,7 +66,7 @@ public class DockerServerTest {
         String spec = CommonUtils.readFileOrClasspathResource("worker.config/page-test.json").replace("PORT", Integer.valueOf(server.getTestServerServicePort()).toString());
         client.put("/tasks", spec).expect201Created();
         LOG.trace("list: {}", client.get("/tasks").expect200Ok().body());
-        client.put("/tasks", spec).expectAnyOf(HttpStatusCode.HTTP_CONFLICT.statusCode());
+        client.put("/tasks", spec).expectAnyOf(HttpStatus.HTTP_CONFLICT.code());
         Thread.sleep(3000);
     }
 

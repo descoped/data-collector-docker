@@ -13,7 +13,7 @@ import no.ssb.config.DynamicConfiguration;
 import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dc.api.Specification;
 import no.ssb.dc.api.context.ExecutionContext;
-import no.ssb.dc.api.http.HttpStatusCode;
+import no.ssb.dc.api.http.HttpStatus;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.api.util.JsonParser;
@@ -217,7 +217,7 @@ public class GCSUploadFailureTest {
         final int pageSize = 100;
         final int stopAtPosition = -1;
         final int failAtPosition = EventItem.EVENT_ID_OFFSET + 1500; // event-id-offset + position-fail-at
-        final int failWithStatusCode = HttpStatusCode.HTTP_INTERNAL_ERROR.statusCode();
+        final int failWithStatusCode = HttpStatus.HTTP_INTERNAL_ERROR.code();
         final boolean generateRandomEventItemData = true;
         final int generateEventItemRecordSize = 250;
         final int generateEventItemRecordKeySize = 8;
@@ -259,7 +259,7 @@ public class GCSUploadFailureTest {
         final int pageSize = 100;
         final int stopAtPosition = -1;
         final int failAtPosition = EventItem.EVENT_ID_OFFSET + 1500; // event-id-offset + position-fail-at
-        final int failWithStatusCode = HttpStatusCode.HTTP_INTERNAL_ERROR.statusCode();
+        final int failWithStatusCode = HttpStatus.HTTP_INTERNAL_ERROR.code();
         final boolean generateRandomEventItemData = true;
         final int generateEventItemRecordSize = 250;
         final int generateEventItemRecordKeySize = 8;
@@ -269,7 +269,7 @@ public class GCSUploadFailureTest {
                 generateRandomEventItemData, generateEventItemRecordSize, generateEventItemRecordKeySize, generateEventItemRecordElementSize);
 
         String spec = specificationBuilder.serialize();
-        client.put("/tasks", spec).expectAnyOf(HttpStatusCode.HTTP_CREATED.statusCode());
+        client.put("/tasks", spec).expectAnyOf(HttpStatus.HTTP_CREATED.code());
 
         try {
             while (true) {
