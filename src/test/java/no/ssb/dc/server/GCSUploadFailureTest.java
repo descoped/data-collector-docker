@@ -208,7 +208,7 @@ public class GCSUploadFailureTest {
                 );
     }
 
-//    @Disabled
+    @Disabled
     @Test
     void thatWorkerCausesUploadFailureToGCS() throws InterruptedException, IOException {
         purgeTempFilesAndBucket();
