@@ -167,7 +167,6 @@ public class GCSUploadFailureTest {
                         .header("accept", "application/xml")
                         .variable("baseURL", server.testURL(""))
                         .variable("nextPosition", "${contentStream.lastOrInitialPosition(1)}")
-                        .variable("fromPosition", fromPosition)
                         .variable("pageSize", pageSize)
                         .variable("stopAt", stopAtPosition)
                         .variable("failAt", failAtPosition)
@@ -209,7 +208,7 @@ public class GCSUploadFailureTest {
                 );
     }
 
-    @Disabled
+//    @Disabled
     @Test
     void thatWorkerCausesUploadFailureToGCS() throws InterruptedException, IOException {
         purgeTempFilesAndBucket();
@@ -229,8 +228,8 @@ public class GCSUploadFailureTest {
 
         try {
             CompletableFuture<ExecutionContext> worker = Worker.newBuilder()
-                    .specification(specificationBuilder)
                     .configuration(configuration.asMap())
+                    .specification(specificationBuilder)
                     .build()
                     .runAsync();
 
@@ -249,7 +248,6 @@ public class GCSUploadFailureTest {
 
             System.out.flush();
         }
-
     }
 
     @Disabled
