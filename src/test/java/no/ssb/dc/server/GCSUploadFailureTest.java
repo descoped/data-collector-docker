@@ -250,7 +250,7 @@ public class GCSUploadFailureTest {
         }
     }
 
-    @Disabled
+//    @Disabled
     @Test
     void thatServerCausesUploadFailureToGCS() throws IOException, InterruptedException {
         purgeTempFilesAndBucket();
@@ -269,13 +269,12 @@ public class GCSUploadFailureTest {
                 generateRandomEventItemData, generateEventItemRecordSize, generateEventItemRecordKeySize, generateEventItemRecordElementSize);
 
         String spec = specificationBuilder.serialize();
-        client.put("/tasks", spec);
+        client.put("/tasks", spec).expectAnyOf(HttpStatusCode.HTTP_CREATED.statusCode());
 
         try {
             while (true) {
-                ResponseHelper<String> taskList = client.get("/tasks");
-                String json = taskList.expect200Ok().body();
-                ArrayNode taskNodes = JsonParser.createJsonParser().fromJson(json, ArrayNode.class);
+                ResponseHelper<String> taskList = client.get("/tasks").expect200Ok();
+                ArrayNode taskNodes = JsonParser.createJsonParser().fromJson(taskList.body(), ArrayNode.class);
                 if (taskNodes.size() == 1) {
                     TimeUnit.MILLISECONDS.sleep(500);
                     continue;
