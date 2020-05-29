@@ -12,6 +12,8 @@ import com.google.cloud.storage.StorageOptions;
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dc.api.Specification;
+import no.ssb.dc.api.content.ContentStore;
+import no.ssb.dc.api.content.ContentStoreInitializer;
 import no.ssb.dc.api.context.ExecutionContext;
 import no.ssb.dc.api.http.HttpStatus;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
@@ -22,6 +24,7 @@ import no.ssb.dc.test.client.ResponseHelper;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.controller.EventItem;
 import no.ssb.dc.test.server.TestServer;
+import no.ssb.service.provider.api.ProviderConfigurator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -210,7 +213,7 @@ public class GCSUploadFailureTest {
 
     @Disabled
     @Test
-    void thatWorkerCausesUploadFailureToGCS() throws InterruptedException, IOException {
+    void thatWorkerCausesUploadFailureToGCS() throws Exception {
         purgeTempFilesAndBucket();
 
         final int fromPosition = 1;
@@ -226,10 +229,14 @@ public class GCSUploadFailureTest {
         SpecificationBuilder specificationBuilder = createMockSpecificationBuilder(fromPosition, pageSize, stopAtPosition, failAtPosition, failWithStatusCode,
                 generateRandomEventItemData, generateEventItemRecordSize, generateEventItemRecordKeySize, generateEventItemRecordElementSize);
 
+        ContentStore contentStore = ProviderConfigurator.configure(configuration.asMap(), configuration.evaluateToString("content.stream.connector"), ContentStoreInitializer.class);
+
         try {
             CompletableFuture<ExecutionContext> worker = Worker.newBuilder()
                     .configuration(configuration.asMap())
                     .specification(specificationBuilder)
+                    .contentStore(contentStore)
+                    .keepContentStoreOpenOnWorkerCompletion(true)
                     .build()
                     .runAsync();
 
@@ -247,6 +254,9 @@ public class GCSUploadFailureTest {
             longListTempFiles().forEach(System.err::println);
 
             System.out.flush();
+
+            System.out.printf("Close ContentStore!%n");
+            contentStore.close();
         }
     }
 
@@ -282,7 +292,7 @@ public class GCSUploadFailureTest {
                 break;
             }
         } finally {
-            TimeUnit.SECONDS.sleep(5);
+            TimeUnit.SECONDS.sleep(30);
 
             System.out.printf("List bucket files%n");
             longListBucket().forEach(System.err::println);
