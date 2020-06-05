@@ -31,7 +31,8 @@ public class Server {
         StoreBasedDynamicConfiguration.Builder configurationBuilder = new StoreBasedDynamicConfiguration.Builder()
                 .propertiesResource("application-defaults.properties")
                 .propertiesResource("/conf/application-defaults.properties")
-                .propertiesResource("/conf/application.properties");
+                .propertiesResource("/conf/application.properties")
+                .propertiesResource("/conf/application-override.properties");
 
         /*
          * pre-req: `docker-compose up` in this repo
