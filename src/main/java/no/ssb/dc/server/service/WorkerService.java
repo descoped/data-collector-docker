@@ -118,7 +118,7 @@ public class WorkerService implements Service {
                     .workerObserver(workerObserver)
                     .specification(specificationBuilder)
                     .contentStore(contentStore)
-                    .keepContentStoreOpenOnWorkerCompletion(true);
+                    .keepContentStoreOpenOnWorkerCompletion(false);
 
             if (printExecutionPlan) {
                 workerBuilder
