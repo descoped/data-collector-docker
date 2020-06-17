@@ -55,6 +55,10 @@ public class WorkerService implements Service {
         this.contentStore = ProviderConfigurator.configure(configuration.asMap(), configuration.evaluateToString("content.stream.connector"), ContentStoreInitializer.class);
     }
 
+    public ContentStore getContentStore() {
+        return contentStore;
+    }
+
     void onWorkerStart(WorkerObservable observable) {
         Optional<Consumer<WorkerLifecycleCallback>> workerLifecycleConsumer = Optional.ofNullable(this.workerLifecycleCallback);
         AtomicReference<WorkerStatus> workerStatus = new AtomicReference<>(WorkerStatus.RUNNING);
