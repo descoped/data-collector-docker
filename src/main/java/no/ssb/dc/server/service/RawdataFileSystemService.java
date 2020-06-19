@@ -2,9 +2,10 @@ package no.ssb.dc.server.service;
 
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.content.ContentStore;
+import no.ssb.dc.api.content.ContentStream;
 import no.ssb.dc.application.spi.Service;
 import no.ssb.dc.content.RawdataFileSystemWriter;
-import no.ssb.dc.content.provider.rawdata.RawdataClientContentStore;
+import no.ssb.dc.content.provider.rawdata.RawdataClientContentStream;
 import no.ssb.dc.server.component.ContentStoreComponent;
 import no.ssb.rawdata.api.RawdataClient;
 import org.slf4j.Logger;
@@ -26,7 +27,8 @@ public class RawdataFileSystemService implements Service {
     public RawdataFileSystemService(DynamicConfiguration configuration, ContentStoreComponent contentStoreComponent) {
         this.configuration = configuration;
         ContentStore contentStore = contentStoreComponent.getDelegate();
-        this.rawdataClient = ((RawdataClientContentStore)contentStore).getContentStream().getClient();;
+        ContentStream contentStream = contentStore.contentStream();
+        this.rawdataClient = ((RawdataClientContentStream)contentStream).getClient();
     }
 
     @Override
