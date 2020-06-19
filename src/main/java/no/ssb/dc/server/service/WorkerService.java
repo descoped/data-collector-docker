@@ -2,7 +2,6 @@ package no.ssb.dc.server.service;
 
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.content.ContentStore;
-import no.ssb.dc.api.content.ContentStoreInitializer;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.health.HealthResourceFactory;
@@ -15,7 +14,7 @@ import no.ssb.dc.core.executor.WorkerStatus;
 import no.ssb.dc.core.health.HealthWorkerHistoryResource;
 import no.ssb.dc.core.health.HealthWorkerMonitor;
 import no.ssb.dc.core.health.HealthWorkerResource;
-import no.ssb.service.provider.api.ProviderConfigurator;
+import no.ssb.dc.server.component.ContentStoreComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,23 +39,21 @@ public class WorkerService implements Service {
     private final Consumer<WorkerLifecycleCallback> workerLifecycleCallback;
     private final ContentStore contentStore;
 
-    public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory) {
-        this(configuration, metricsResourceFactory, healthResourceFactory, configuration.evaluateToBoolean("data.collector.print-execution-plan"), null);
+    public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory,
+                         ContentStoreComponent contentStoreComponent) {
+        this(configuration, metricsResourceFactory, healthResourceFactory, contentStoreComponent,
+                configuration.evaluateToBoolean("data.collector.print-execution-plan"), null);
     }
 
     public WorkerService(DynamicConfiguration configuration, MetricsResourceFactory metricsResourceFactory, HealthResourceFactory healthResourceFactory,
-                         boolean printExecutionPlan, Consumer<WorkerLifecycleCallback> workerLifecycleCallback) {
+                         ContentStoreComponent contentStoreComponent, boolean printExecutionPlan, Consumer<WorkerLifecycleCallback> workerLifecycleCallback) {
         this.configuration = configuration;
         this.metricsResourceFactory = metricsResourceFactory;
         this.healthResourceFactory = healthResourceFactory;
         this.printExecutionPlan = printExecutionPlan;
         this.workerLifecycleCallback = workerLifecycleCallback;
         this.workerObserver = new WorkerObserver(this::onWorkerStart, this::onWorkerFinish);
-        this.contentStore = ProviderConfigurator.configure(configuration.asMap(), configuration.evaluateToString("content.stream.connector"), ContentStoreInitializer.class);
-    }
-
-    public ContentStore getContentStore() {
-        return contentStore;
+        this.contentStore = contentStoreComponent.getDelegate();
     }
 
     void onWorkerStart(WorkerObservable observable) {

@@ -7,6 +7,7 @@ import no.ssb.dc.application.health.HealthApplicationResource;
 import no.ssb.dc.application.health.HealthConfigResource;
 import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.application.metrics.MetricsResourceFactory;
+import no.ssb.dc.server.component.ContentStoreComponent;
 import no.ssb.dc.test.server.TestServer;
 import no.ssb.dc.test.server.TestServerExtension;
 import no.ssb.dc.test.server.TestServerFactory;
@@ -100,7 +101,8 @@ class WorkerServiceLifecycleTest {
         HealthApplicationMonitor applicationMonitor = healthResourceFactory.getHealthResource(HealthApplicationResource.class).getMonitor();
         applicationMonitor.setServerStatus(HealthApplicationMonitor.ServerStatus.RUNNING);
 
-        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), healthResourceFactory, false, WorkerServiceLifecycleTest::workerLifecycleCallback);
+        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), healthResourceFactory,
+                ContentStoreComponent.create(testServer.getConfiguration()), false, WorkerServiceLifecycleTest::workerLifecycleCallback);
 
         if (false) {
             return Stream.of(new Task(workerService, createSpecificationBuilder(testServer, "&stopAt=1000", "?failWithStatusCode=404&failAt=1105"), true));

@@ -5,6 +5,7 @@ import no.ssb.dc.api.content.ContentStore;
 import no.ssb.dc.application.spi.Service;
 import no.ssb.dc.content.RawdataFileSystemWriter;
 import no.ssb.dc.content.provider.rawdata.RawdataClientContentStore;
+import no.ssb.dc.server.component.ContentStoreComponent;
 import no.ssb.rawdata.api.RawdataClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +23,9 @@ public class RawdataFileSystemService implements Service {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private RawdataFileSystemWriter writer;
 
-    public RawdataFileSystemService(DynamicConfiguration configuration, WorkerService workerService) {
+    public RawdataFileSystemService(DynamicConfiguration configuration, ContentStoreComponent contentStoreComponent) {
         this.configuration = configuration;
-        ContentStore contentStore = workerService.getContentStore();
+        ContentStore contentStore = contentStoreComponent.getDelegate();
         this.rawdataClient = ((RawdataClientContentStore)contentStore).getContentStream().getClient();;
     }
 

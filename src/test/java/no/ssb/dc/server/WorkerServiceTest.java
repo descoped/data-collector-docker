@@ -4,6 +4,7 @@ import no.ssb.dc.api.Specification;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
 import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.application.metrics.MetricsResourceFactory;
+import no.ssb.dc.server.component.ContentStoreComponent;
 import no.ssb.dc.server.service.WorkerService;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
@@ -70,6 +71,7 @@ class WorkerServiceTest {
                     .url("${baseURL}/api/events/${eventId}?type=event" + failAtQueryString)
                     .pipe(addContent("${position}", "event-doc"))
             );
+
     @Inject
     TestClient client;
 
@@ -78,7 +80,8 @@ class WorkerServiceTest {
 
     @Test
     void testWorkerService() throws InterruptedException {
-        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create());
+        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create(),
+                ContentStoreComponent.create(testServer.getConfiguration()));
 
         SpecificationBuilder specificationBuilder = specificationBuilderSupplier.apply(testServer.testURL(""), "");
         String workerId = workerService.createOrRejectTask(specificationBuilder);
@@ -93,7 +96,8 @@ class WorkerServiceTest {
 
     @Test
     void testWorkerServiceWithFailAt() throws InterruptedException {
-        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create());
+        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create(),
+                ContentStoreComponent.create(testServer.getConfiguration()));
 
         SpecificationBuilder specificationBuilder = specificationBuilderSupplier.apply(testServer.testURL(""), "&failWithStatusCode=404&failAt=1005");
         try {

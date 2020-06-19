@@ -29,6 +29,7 @@ module no.ssb.dc.server {
     opens worker.config;
 
     exports no.ssb.dc.server;
-    exports no.ssb.dc.server.controller;
+    exports no.ssb.dc.server.component;
     exports no.ssb.dc.server.service;
+    exports no.ssb.dc.server.controller;
 }
