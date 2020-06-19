@@ -5,9 +5,7 @@ import no.ssb.dc.api.content.ContentStore;
 import no.ssb.dc.api.content.ContentStream;
 import no.ssb.dc.application.spi.Service;
 import no.ssb.dc.content.RawdataFileSystemWriter;
-import no.ssb.dc.content.provider.rawdata.RawdataClientContentStream;
 import no.ssb.dc.server.component.ContentStoreComponent;
-import no.ssb.rawdata.api.RawdataClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,15 +18,14 @@ public class RawdataFileSystemService implements Service {
     private static final Logger LOG = LoggerFactory.getLogger(RawdataFileSystemService.class);
 
     private final DynamicConfiguration configuration;
-    private final RawdataClient rawdataClient;
+    private final ContentStream contentStream;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private RawdataFileSystemWriter writer;
 
     public RawdataFileSystemService(DynamicConfiguration configuration, ContentStoreComponent contentStoreComponent) {
         this.configuration = configuration;
         ContentStore contentStore = contentStoreComponent.getDelegate();
-        ContentStream contentStream = contentStore.contentStream();
-        this.rawdataClient = ((RawdataClientContentStream)contentStream).getClient();
+        this.contentStream = contentStore.contentStream();
     }
 
     @Override
@@ -57,7 +54,7 @@ public class RawdataFileSystemService implements Service {
                 path = Paths.get(location).toAbsolutePath().normalize();
             }
             writer = new RawdataFileSystemWriter(
-                    rawdataClient,
+                    contentStream,
                     configuration.evaluateToString("data.collector.rawdata.dump.topic"),
                     path
             );
