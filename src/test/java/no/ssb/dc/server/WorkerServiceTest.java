@@ -103,7 +103,7 @@ class WorkerServiceTest {
         try {
             String workerId = workerService.createOrRejectTask(specificationBuilder);
 
-            Thread.sleep(2000);
+            Thread.sleep(3000);
         } finally {
             assertTrue(workerService.list().isEmpty(), "Task list should be empty!");
         }
