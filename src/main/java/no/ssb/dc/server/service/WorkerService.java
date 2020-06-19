@@ -157,6 +157,11 @@ public class WorkerService implements Service {
     }
 
     @Override
+    public boolean isEnabled() {
+        return true;
+    }
+
+    @Override
     public void start() {
         // nop
     }

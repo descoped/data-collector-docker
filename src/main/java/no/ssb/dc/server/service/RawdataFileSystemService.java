@@ -32,6 +32,11 @@ public class RawdataFileSystemService implements Service {
     }
 
     @Override
+    public boolean isEnabled() {
+        return configuration.evaluateToBoolean("data.collector.rawdata.dump.enabled");
+    }
+
+    @Override
     public void start() {
         if (!configuration.evaluateToBoolean("data.collector.rawdata.dump.enabled")) {
             return;
