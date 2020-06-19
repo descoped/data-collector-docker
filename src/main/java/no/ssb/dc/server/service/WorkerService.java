@@ -165,8 +165,6 @@ public class WorkerService implements Service {
     public void stop() {
         try {
             workManager.cancel();
-            LOG.info("Closing ContentStore!");
-            contentStore.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
