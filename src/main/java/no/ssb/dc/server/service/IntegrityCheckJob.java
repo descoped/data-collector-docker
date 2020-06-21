@@ -57,6 +57,10 @@ public class IntegrityCheckJob {
                         LOG.info("Reached en of stream for topic: {}", topic);
                         break;
                     }
+
+                    // release data
+                    buffer.data().clear();
+                    buffer.manifest().clear();
                 }
                 LOG.info("Exited stream consumer for topic: {}", topic);
             } finally {

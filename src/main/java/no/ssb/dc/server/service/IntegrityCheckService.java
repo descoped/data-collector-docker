@@ -73,7 +73,7 @@ public class IntegrityCheckService implements Service {
             LOG.info("Check integrity of topic {} completed successfully at position {}!", summary.topic, summary.positionCount);
             return _job;
         }).exceptionally(throwable -> {
-            LOG.error("Error check integrity: {}", CommonUtils.captureStackTrace(throwable));
+            LOG.error("Ended exceptionally with error: {}", CommonUtils.captureStackTrace(throwable));
             if (throwable instanceof RuntimeException) {
                 throw (RuntimeException) throwable;
             } else if (throwable instanceof Error) {
