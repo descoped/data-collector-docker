@@ -28,6 +28,8 @@ module no.ssb.dc.server {
     opens no.ssb.dc.server;
     opens worker.config;
 
+    opens no.ssb.dc.server.controller to com.fasterxml.jackson.databind;
+
     exports no.ssb.dc.server;
     exports no.ssb.dc.server.component;
     exports no.ssb.dc.server.service;
