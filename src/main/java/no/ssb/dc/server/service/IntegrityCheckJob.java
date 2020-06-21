@@ -35,32 +35,37 @@ public class IntegrityCheckJob {
             ContentStreamBuffer buffer;
             ContentStreamBuffer peekBuffer = null;
             boolean test = true;
-            int timeoutInSeconds = 5;
+            int timeoutInSeconds = 15;
             if (configuration.evaluateToString("data.collector.consumer.timeoutInSeconds") != null) {
                 timeoutInSeconds = configuration.evaluateToInt("data.collector.consumer.timeoutInSeconds");
             }
-            while (!terminated.get() && (buffer = consumer.receive(timeoutInSeconds, TimeUnit.SECONDS)) != null) {
-                //System.out.printf("consume: %s%n", buffer.position());
-                peekBuffer = buffer;
-                summary.incrementPositionCount();
+            try {
+                LOG.info("Check integrity for topic: {}", topic);
+                while (!terminated.get() && (buffer = consumer.receive(timeoutInSeconds, TimeUnit.SECONDS)) != null) {
+                    //System.out.printf("consume: %s%n", buffer.position());
+                    peekBuffer = buffer;
+                    summary.incrementPositionCount();
 
-                if (test) {
-                    summary.setFirstPosition(buffer.position());
-                    test = false;
+                    if (test) {
+                        summary.setFirstPosition(buffer.position());
+                        test = false;
+                    }
+
+                    summary.updatePositionCounter(buffer);
+
+                    if (lastPosition != null && lastPosition.equals(buffer.position())) {
+                        LOG.info("Reached en of stream for topic: {}", topic);
+                        break;
+                    }
+                }
+                LOG.info("Exited stream consumer for topic: {}", topic);
+            } finally {
+                if (lastPosition == null && peekBuffer != null) {
+                    summary.setLastPosition(peekBuffer.position());
                 }
 
-                summary.updatePositionCounter(buffer);
-
-                if (lastPosition != null && lastPosition.equals(buffer.position())) {
-                    break;
-                }
+                summary.setEnded();
             }
-
-            if (lastPosition == null && peekBuffer != null) {
-                summary.setLastPosition(peekBuffer.position());
-            }
-
-            summary.setEnded();
 
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
