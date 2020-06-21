@@ -30,8 +30,7 @@ public class IntegrityCheckJob {
         summary.setTopic(topic);
         String lastPosition = contentStore.lastPosition(topic);
         summary.setLastPosition(lastPosition);
-        ContentStreamConsumer consumer = contentStore.contentStream().consumer(topic);
-        try {
+        try (ContentStreamConsumer consumer = contentStore.contentStream().consumer(topic)) {
             ContentStreamBuffer buffer;
             ContentStreamBuffer peekBuffer = null;
             boolean test = true;
@@ -72,6 +71,8 @@ public class IntegrityCheckJob {
             }
 
         } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
