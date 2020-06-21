@@ -1,4 +1,4 @@
-package no.ssb.dc.server.controller;
+package no.ssb.dc.server.service;
 
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.content.ContentStore;
@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IntegrityCheckJob {
     private static final Logger LOG = LoggerFactory.getLogger(IntegrityCheckJob.class);
@@ -16,6 +17,7 @@ public class IntegrityCheckJob {
     private final DynamicConfiguration configuration;
     private final ContentStore contentStore;
     private final IntegrityCheckJobSummary summary;
+    private final AtomicBoolean terminated = new AtomicBoolean(false);
 
     public IntegrityCheckJob(DynamicConfiguration configuration, ContentStoreComponent contentStoreComponent, IntegrityCheckJobSummary summary) {
         this.configuration = configuration;
@@ -33,7 +35,12 @@ public class IntegrityCheckJob {
             ContentStreamBuffer buffer;
             ContentStreamBuffer peekBuffer = null;
             boolean test = true;
-            while ((buffer = consumer.receive(1, TimeUnit.SECONDS)) != null) {
+            int timeoutInSeconds = 5;
+            if (configuration.evaluateToString("data.collector.consumer.timeoutInSeconds") != null) {
+                timeoutInSeconds = configuration.evaluateToInt("data.collector.consumer.timeoutInSeconds");
+            }
+            while (!terminated.get() && (buffer = consumer.receive(timeoutInSeconds, TimeUnit.SECONDS)) != null) {
+                //System.out.printf("consume: %s%n", buffer.position());
                 peekBuffer = buffer;
                 summary.incrementPositionCount();
 
@@ -59,4 +66,13 @@ public class IntegrityCheckJob {
             throw new RuntimeException(e);
         }
     }
+
+    public IntegrityCheckJobSummary.Summary getSummary() {
+        return summary.build();
+    }
+
+    public void terminate() {
+        terminated.set(true);
+    }
+
 }

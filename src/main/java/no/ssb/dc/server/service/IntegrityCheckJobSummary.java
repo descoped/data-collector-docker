@@ -1,4 +1,4 @@
-package no.ssb.dc.server.controller;
+package no.ssb.dc.server.service;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
