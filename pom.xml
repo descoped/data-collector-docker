@@ -120,11 +120,11 @@
             <version>1.24.1</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.lmdbjava</groupId>
-            <artifactId>lmdbjava</artifactId>
-            <version>0.7.0</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.lmdbjava</groupId>-->
+<!--            <artifactId>lmdbjava</artifactId>-->
+<!--            <version>0.7.0</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.slf4j</groupId>
