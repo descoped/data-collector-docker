@@ -22,8 +22,8 @@ module no.ssb.dc.server {
     requires ch.qos.logback.core;
     requires logstash.logback.encoder;
     requires io.github.classgraph;
-
     requires org.apache.tika.core;
+    requires transitive lmdbjava;
 
     requires undertow.core;
 
