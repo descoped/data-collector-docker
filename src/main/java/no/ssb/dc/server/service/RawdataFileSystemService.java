@@ -5,6 +5,7 @@ import no.ssb.dc.api.content.ContentStore;
 import no.ssb.dc.api.content.ContentStream;
 import no.ssb.dc.api.content.ContentStreamBuffer;
 import no.ssb.dc.api.content.ContentStreamConsumer;
+import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.spi.Service;
 import no.ssb.dc.server.component.ContentStoreComponent;
 import org.apache.tika.config.TikaConfig;
@@ -72,7 +73,17 @@ public class RawdataFileSystemService implements Service {
         String topic = configuration.evaluateToString("data.collector.rawdata.dump.topic");
 
         workDir = targetPath.resolve(topic);
-        consumerFuture = createFuture(topic, workDir);
+        consumerFuture = createFuture(topic, workDir)
+                .exceptionally(throwable -> {
+                    LOG.error("Ended exceptionally with error: {}", CommonUtils.captureStackTrace(throwable));
+                    if (throwable instanceof RuntimeException) {
+                        throw (RuntimeException) throwable;
+                    } else if (throwable instanceof Error) {
+                        throw (Error) throwable;
+                    } else {
+                        throw new RuntimeException(throwable);
+                    }
+                });
     }
 
     @Override
