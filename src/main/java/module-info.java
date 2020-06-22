@@ -23,6 +23,8 @@ module no.ssb.dc.server {
     requires logstash.logback.encoder;
     requires io.github.classgraph;
 
+    requires org.apache.tika.core;
+
     requires undertow.core;
 
     opens no.ssb.dc.server;
