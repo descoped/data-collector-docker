@@ -89,7 +89,14 @@ public class RawdataFileSystemService implements Service {
     @Override
     public void stop() {
         if (!closed.compareAndSet(false, true)) {
-            consumerFuture.join();
+            int retryCount = 0;
+            while (!consumerFuture.isDone()) {
+                if (retryCount > 10) {
+                    break;
+                }
+                nap(100);
+                retryCount++;
+            }
         }
     }
 

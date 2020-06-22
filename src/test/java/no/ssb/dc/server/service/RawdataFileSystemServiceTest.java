@@ -10,7 +10,6 @@ import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +61,7 @@ public class RawdataFileSystemServiceTest {
         }
     }
 
-    @Disabled
+//    @Disabled
     @Test
     void exportData() throws IOException {
         ContentStoreComponent contentStoreComponent = server.getApplication().unwrap(ContentStoreComponent.class);
@@ -95,7 +94,7 @@ public class RawdataFileSystemServiceTest {
 
     private void nap() {
         try {
-            Thread.sleep(250);
+            Thread.sleep(100);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
