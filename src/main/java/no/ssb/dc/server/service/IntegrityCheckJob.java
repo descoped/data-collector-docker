@@ -43,6 +43,7 @@ public class IntegrityCheckJob {
                 while (!terminated.get() && (buffer = consumer.receive(timeoutInSeconds, TimeUnit.SECONDS)) != null) {
                     //System.out.printf("consume: %s%n", buffer.position());
                     peekBuffer = buffer;
+                    summary.setCurrentPosition(buffer.position());
                     summary.incrementPositionCount();
 
                     if (test) {
