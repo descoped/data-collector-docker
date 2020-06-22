@@ -45,7 +45,7 @@ else
   JMX_REMOTE_OPTS=""
 fi
 
-DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI"
+DEFAULT_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseContainerSupport"
 
 JAVA_AGENT_OPTS="-XX:+StartAttachListener -javaagent:$(find /opt/dc/lib/ -type f -iname 'byte-buddy-agent*')"
 
