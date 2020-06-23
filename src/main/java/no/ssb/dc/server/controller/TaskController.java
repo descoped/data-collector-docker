@@ -13,10 +13,10 @@ import no.ssb.dc.server.service.WorkerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.NavigableSet;
 import java.util.Set;
-import java.util.TreeSet;
 
 public class TaskController implements Controller {
 
@@ -96,7 +96,7 @@ public class TaskController implements Controller {
             exchange.setStatusCode(400);
             return;
         }
-        NavigableSet<String> pathElements = new TreeSet<>(List.of(path));
+        Deque<String> pathElements = new LinkedList<>(List.of(path));
         String resourceName = pathElements.pollLast();
         String workerId = pathElements.pollLast();
         boolean canceled = workerService.cancelTask(workerId);
