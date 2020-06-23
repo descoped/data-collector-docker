@@ -124,12 +124,26 @@
             <groupId>org.lmdbjava</groupId>
             <artifactId>lmdbjava</artifactId>
             <version>0.8.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.github.jnr</groupId>
-                    <artifactId>jffi</artifactId>
-                </exclusion>
-            </exclusions>
+<!--            <exclusions>-->
+<!--                <exclusion>-->
+<!--                    <groupId>com.github.jnr</groupId>-->
+<!--                    <artifactId>jffi</artifactId>-->
+<!--                </exclusion>-->
+<!--            </exclusions>-->
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>com.github.jnr</groupId>-->
+<!--            <artifactId>jffi</artifactId>-->
+<!--            <version>1.2.18</version>-->
+<!--        </dependency>-->
+
+        <dependency>
+            <groupId>com.github.jnr</groupId>
+            <artifactId>jffi</artifactId>
+            <version>1.2.18</version>
+            <classifier>native</classifier>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -395,13 +409,14 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M4</version>
+                <version>3.0.0-M5</version>
                 <configuration>
                     <argLine>
                         --illegal-access=deny
+                        --add-opens=java.base/java.nio=lmdbjava
+                        --add-opens=no.ssb.dc.server/no.ssb.dc.server.service=ALL-UNNAMED
                         --add-reads no.ssb.dc.content.rawdata=no.ssb.dc.core
-                        --add-exports
-                        no.ssb.rawdata.postgres/no.ssb.rawdata.provider.postgres=no.ssb.service.provider.api,no.ssb.dc.server
+                        --add-exports no.ssb.rawdata.postgres/no.ssb.rawdata.provider.postgres=no.ssb.service.provider.api,no.ssb.dc.server
                         -Xmx1500m
                     </argLine>
                 </configuration>

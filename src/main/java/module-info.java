@@ -23,9 +23,10 @@ module no.ssb.dc.server {
     requires logstash.logback.encoder;
     requires io.github.classgraph;
     requires org.apache.tika.core;
-    requires lmdbjava;
 
     requires undertow.core;
+
+    requires lmdbjava;
 
     opens no.ssb.dc.server;
     opens worker.config;

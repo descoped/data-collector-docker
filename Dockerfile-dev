@@ -31,6 +31,10 @@ ENV ENABLE_JMX_REMOTE_DEBUGGING=true
 #
 COPY --from=build /opt/jdk /opt/jdk/
 COPY target/dependency $DC_HOME/lib/
+RUN mkdir -p /ld_lib \
+    && LMDB_NATIVE_JAR=$(find $DC_HOME/lib -type f -iname 'jffi-*-native.jar') \
+    && unzip "$LMDB_NATIVE_JAR" "jni/x86_64-Linux/*" -d /ld_lib \
+    && rm -f "$LMDB_NATIVE_JAR"
 COPY target/data-collector-*.jar $DC_HOME/lib/
 COPY target/classes/logback-stash.xml $DC_HOME/
 
@@ -42,6 +46,7 @@ RUN chmod +x /run.sh
 
 ENV PATH=/opt/jdk/bin:$PATH
 ENV JAVA_HOME=/opt/jdk
+ENV LD_LIBRARY_PATH=/ld_lib/jni/x86_64-Linux/:$LD_LIBRARY_PATH
 
 WORKDIR $DC_HOME
 
