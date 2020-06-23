@@ -10,10 +10,10 @@ import no.ssb.dc.application.spi.Controller;
 import no.ssb.dc.server.service.IntegrityCheckJobSummary;
 import no.ssb.dc.server.service.IntegrityCheckService;
 
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.NavigableSet;
 import java.util.Set;
-import java.util.TreeSet;
 
 public class IntegrityCheckController implements Controller {
 
@@ -71,18 +71,18 @@ public class IntegrityCheckController implements Controller {
         exchange.setStatusCode(400);
     }
 
-    NavigableSet<String> parseRequestPath(HttpServerExchange exchange, int expectedPathElements) {
+    Deque<String> parseRequestPath(HttpServerExchange exchange, int expectedPathElements) {
         String[] path = exchange.getRequestPath().split("/");
         if (path.length != expectedPathElements) {
             exchange.setStatusCode(400);
             return null;
         }
-        return new TreeSet<>(List.of(path));
+        return new LinkedList<>(List.of(path));
     }
 
     // PUT /integrity/TOPIC
     void createJob(HttpServerExchange exchange) {
-        NavigableSet<String> pathElements = parseRequestPath(exchange, 3);
+        Deque<String> pathElements = parseRequestPath(exchange, 3);
         if (pathElements == null) return;
         String topic = pathElements.pollLast();
         if (service.isJobRunning(topic)) {
@@ -108,7 +108,7 @@ public class IntegrityCheckController implements Controller {
 
     // GET /integrity/TOPIC
     void getJobSummary(HttpServerExchange exchange) {
-        NavigableSet<String> pathElements = parseRequestPath(exchange, 3);
+        Deque<String> pathElements = parseRequestPath(exchange, 3);
         if (pathElements == null) return;
         String topic = pathElements.pollLast();
         if (!service.hasJob(topic)) {
@@ -126,7 +126,7 @@ public class IntegrityCheckController implements Controller {
 
     // DELETE /integrity/TOPIC
     void cancelJob(HttpServerExchange exchange) {
-        NavigableSet<String> pathElements = parseRequestPath(exchange, 2);
+        Deque<String> pathElements = parseRequestPath(exchange, 2);
         if (pathElements == null) return;
         String topic = pathElements.pollLast();
         if (!service.isJobRunning(topic)) {

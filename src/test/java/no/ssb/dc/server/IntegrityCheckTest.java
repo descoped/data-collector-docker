@@ -23,7 +23,7 @@ public class IntegrityCheckTest {
     private static final Logger LOG = LoggerFactory.getLogger(IntegrityCheckJob.class);
 
     static void produceMessages(ContentStream contentStream) {
-        try (ContentStreamProducer producer = contentStream.producer("test-stream")) {
+        try (ContentStreamProducer producer = contentStream.producer("2020-test-stream")) {
             for (int n = 0; n < 100; n++) {
                 producer.publishBuilders(producer.builder().position(String.valueOf(n)).put("entry", "DATA".getBytes(StandardCharsets.UTF_8)));
 
@@ -60,7 +60,7 @@ public class IntegrityCheckTest {
 
         IntegrityCheckJobSummary summary = new IntegrityCheckJobSummary();
         IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, summary);
-        job.consume("test-stream");
+        job.consume("2020-test-stream");
 
         producerThread.join();
         contentStoreComponent.close();
@@ -89,7 +89,7 @@ public class IntegrityCheckTest {
         producerThread.join();
 
         {
-            ResponseHelper<String> response = client.put("/check-integrity/test-stream");
+            ResponseHelper<String> response = client.put("/check-integrity/2020-test-stream");
             response.expect201Created();
         }
 
@@ -99,12 +99,12 @@ public class IntegrityCheckTest {
         }
 
         {
-            ResponseHelper<String> response = client.get("/check-integrity/test-stream");
+            ResponseHelper<String> response = client.get("/check-integrity/2020-test-stream");
             LOG.trace("job-summary: {}", response.expect200Ok().body());
         }
 
         {
-            ResponseHelper<String> response = client.delete("/check-integrity/test-stream");
+            ResponseHelper<String> response = client.delete("/check-integrity/2020-test-stream");
             LOG.trace("cancel-job: {}", response.expectAnyOf(400).body());
         }
 
