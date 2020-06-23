@@ -2,6 +2,7 @@ package no.ssb.dc.server.service;
 
 import no.ssb.dc.api.util.CommonUtils;
 import org.junit.jupiter.api.Test;
+import org.lmdbjava.CursorIterable;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Txn;
 import org.slf4j.Logger;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Iterator;
 
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -56,6 +58,42 @@ public class LmdbEnvironmentTest {
             // Now if we try to fetch the deleted row, it won't be present
             try (Txn<ByteBuffer> txn = environment.env.txnRead()) {
                 assertNull(db.get(txn, key));
+            }
+
+            try (Txn<ByteBuffer> txn = environment.env.txnWrite()) {
+                key.put("key1".getBytes(UTF_8)).flip();
+                val.put("lmdb".getBytes(UTF_8)).flip();
+                db.put(txn, key, val);
+
+                // We can read data too, even though this is a write Txn.
+                final ByteBuffer found = db.get(txn, key);
+                assertNotNull(found);
+
+                // An explicit commit is required, otherwise Txn.close() rolls it back.
+                txn.commit();
+            }
+
+            try (Txn<ByteBuffer> txn = environment.env.txnWrite()) {
+                key.put("key2".getBytes(UTF_8)).flip();
+                val.put("lmdb".getBytes(UTF_8)).flip();
+                db.put(txn, key, val);
+
+                // We can read data too, even though this is a write Txn.
+                final ByteBuffer found = db.get(txn, key);
+                assertNotNull(found);
+
+                // An explicit commit is required, otherwise Txn.close() rolls it back.
+                txn.commit();
+            }
+
+            try (Txn<ByteBuffer> txn = environment.env.txnRead()) {
+                key.put("key1".getBytes(UTF_8)).flip();
+                ByteBuffer buf = db.get(txn, key);
+
+                Iterator<CursorIterable.KeyVal<ByteBuffer>> it = db.iterate(txn).iterator();
+
+                System.out.printf("%s%n", UTF_8.decode(it.next().key()).toString());
+                System.out.printf("%s%n", UTF_8.decode(it.next().key()).toString());
             }
         }
     }
