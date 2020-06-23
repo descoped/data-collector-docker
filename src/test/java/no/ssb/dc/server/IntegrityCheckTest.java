@@ -112,4 +112,9 @@ public class IntegrityCheckTest {
 
         server.stop();
     }
+
+    @Test
+    void buildLmdbPositionStore() {
+
+    }
 }
