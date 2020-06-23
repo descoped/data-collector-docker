@@ -2,7 +2,8 @@
 set -e
 
 JPMS_SWITCHES="
-  --add-opens=java.base/java.nio=lmdbjava
+  --add-opens java.base/java.nio=lmdbjava
+  --add-exports java.base/sun.nio.ch=lmdbjava
   --add-reads no.ssb.dc.core=ALL-UNNAMED
   --add-opens no.ssb.dc.core/no.ssb.dc.core=ALL-UNNAMED
   --add-reads no.ssb.dc.content.rawdata=no.ssb.dc.core

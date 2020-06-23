@@ -1,5 +1,7 @@
 module no.ssb.dc.server {
 
+    requires jdk.unsupported;
+
     requires no.ssb.service.provider.api;
     requires no.ssb.config;
     requires no.ssb.dc.api;
