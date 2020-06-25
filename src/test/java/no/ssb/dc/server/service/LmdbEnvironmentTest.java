@@ -33,7 +33,7 @@ public class LmdbEnvironmentTest {
         Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
         removeDb(dbPath);
 
-        try (LmdbEnvironment environment = new LmdbEnvironment(dbPath, "test-stream")) {
+        try (LmdbEnvironment environment = new LmdbEnvironment(null, dbPath, "test-stream")) {
             try (IntegrityCheckIndex index = new IntegrityCheckIndex(environment, 50)) {
 
                 for (int n = 1; n < 100; n++) {

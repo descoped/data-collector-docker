@@ -54,6 +54,7 @@ public class IntegrityCheckTest {
                 .values("content.stream.connector", "rawdata")
                 .values("rawdata.client.provider", "memory")
                 .values("data.collector.consumer.timeoutInSeconds", "1")
+                .values("data.collector.integrityCheck.dbSizeInMb", "100")
                 .build();
 
         ContentStoreComponent contentStoreComponent = ContentStoreComponent.create(configuration);
@@ -64,7 +65,7 @@ public class IntegrityCheckTest {
 
         Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
         LmdbEnvironment.removeDb(dbPath);
-        LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(dbPath, "test-stream");
+        LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbPath, "2020-test-stream");
         IntegrityCheckIndex index = new IntegrityCheckIndex(lmdbEnvironment, 50);
         IntegrityCheckJobSummary summary = new IntegrityCheckJobSummary(index);
         IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, summary);

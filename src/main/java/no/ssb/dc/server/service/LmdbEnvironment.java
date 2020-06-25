@@ -1,5 +1,6 @@
 package no.ssb.dc.server.service;
 
+import no.ssb.config.DynamicConfiguration;
 import org.lmdbjava.ByteBufferProxy;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Env;
@@ -21,23 +22,29 @@ public class LmdbEnvironment implements AutoCloseable {
     private final Env<ByteBuffer> env;
     private final String topic;
     private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final int mapSize;
     private Dbi<ByteBuffer> db;
 
-    public LmdbEnvironment(Path databaseDir, String topic) {
+    public LmdbEnvironment(DynamicConfiguration configuration, Path databaseDir, String topic) {
         this.databaseDir = databaseDir.resolve(topic);
         createDirectories(this.databaseDir);
         this.topic = topic;
         env = createEnvironment();
-        System.out.printf("MaxKeySize: %s%n", env.getMaxKeySize());
+        mapSize = configuration != null && configuration.evaluateToString("data.collector.integrityCheck.dbSizeInMb") != null ?
+                configuration.evaluateToInt("data.collector.integrityCheck.dbSizeInMb") : 50;
+    }
+
+    public static void removeDb(Path path) throws IOException {
+        if (path.toFile().exists())
+            Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
     }
 
     public Env<ByteBuffer> env() {
         return env;
     }
 
-    public static void removeDb(Path path) throws IOException {
-        if (path.toFile().exists())
-            Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+    public int maxKeySize() {
+        return env.getMaxKeySize();
     }
 
     private void createDirectories(Path databaseDir) {
@@ -53,7 +60,7 @@ public class LmdbEnvironment implements AutoCloseable {
     private Env<ByteBuffer> createEnvironment() {
         return Env.create(ByteBufferProxy.PROXY_OPTIMAL)
                 // LMDB also needs to know how large our DB might be. Over-estimating is OK.
-                .setMapSize(10_485_760)
+                .setMapSize(mapSize * 1024 * 1024)
                 // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.
                 .setMaxDbs(1)
                 // Now let's open the Env. The same path can be concurrently opened and

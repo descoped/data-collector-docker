@@ -17,10 +17,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class IntegrityCheckIndex implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(IntegrityCheckIndex.class);
-    static short OFFSET_POSITION_LENGTH = 1;
-    static short ALLOCATED_POSITION_LENGTH = 64;
-    static short MOST_OR_LEAST_SIGNIFICANT_BYTES_LENGTH = 8;
-    static int SEQUENCE_KEY_LENGTH = OFFSET_POSITION_LENGTH + ALLOCATED_POSITION_LENGTH + (MOST_OR_LEAST_SIGNIFICANT_BYTES_LENGTH * 2);
+
     static int CONTENT_LENGTH = 0;
 
     private final LmdbEnvironment lmdbEnvironment;
@@ -34,8 +31,8 @@ public class IntegrityCheckIndex implements AutoCloseable {
     public IntegrityCheckIndex(LmdbEnvironment lmdbEnvironment, int flushBufferCount) {
         this.lmdbEnvironment = lmdbEnvironment;
         this.flushBufferCount = flushBufferCount;
-        this.keyBufferPool = new DirectByteBufferPool(25, SEQUENCE_KEY_LENGTH);
-        this.contentBufferPool = new DirectByteBufferPool(25, CONTENT_LENGTH);
+        this.keyBufferPool = new DirectByteBufferPool(10, lmdbEnvironment.maxKeySize());
+        this.contentBufferPool = new DirectByteBufferPool(10, CONTENT_LENGTH);
         this.sequenceDb = lmdbEnvironment.open();
     }
 
