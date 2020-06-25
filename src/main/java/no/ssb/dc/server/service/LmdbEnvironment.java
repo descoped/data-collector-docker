@@ -3,11 +3,14 @@ package no.ssb.dc.server.service;
 import org.lmdbjava.ByteBufferProxy;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Env;
+import org.lmdbjava.Txn;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
@@ -25,6 +28,11 @@ class LmdbEnvironment implements AutoCloseable {
         createDirectories(this.databaseDir);
         this.topic = topic;
         env = createEnvironment();
+    }
+
+    static void removeDb(Path path) throws IOException {
+        if (path.toFile().exists())
+            Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
     }
 
     private void createDirectories(Path databaseDir) {
@@ -57,8 +65,17 @@ class LmdbEnvironment implements AutoCloseable {
         return db;
     }
 
+    void drop() {
+        if (!closed.get() && db != null) {
+            try (Txn<ByteBuffer> txn = env.txnWrite()) {
+                db.drop(txn);
+            }
+        }
+    }
+
     @Override
     public void close() {
+        // drop()
         if (closed.compareAndSet(false, true)) {
             env.close();
         }
