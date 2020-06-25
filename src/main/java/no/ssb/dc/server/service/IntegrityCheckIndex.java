@@ -8,6 +8,7 @@ import org.lmdbjava.Txn;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -63,7 +64,7 @@ public class IntegrityCheckIndex {
 
     }
 
-    static class SequenceKey {
+    static class SequenceKey implements Comparable<SequenceKey>  {
         final ULID.Value ulid;
         final String position;
 
@@ -78,6 +79,33 @@ public class IntegrityCheckIndex {
                 i++;
             }
             return Arrays.copyOfRange(bytes, i, bytes.length);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            SequenceKey that = (SequenceKey) o;
+            return Objects.equals(ulid, that.ulid) &&
+                    Objects.equals(position, that.position);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(ulid, position);
+        }
+
+        @Override
+        public int compareTo(SequenceKey that) {
+            return this.ulid.compareTo(that.ulid);
+        }
+
+        @Override
+        public String toString() {
+            return "SequenceKey{" +
+                    "ulid=" + ulid +
+                    ", position='" + position + '\'' +
+                    '}';
         }
 
         static SequenceKey fromByteBuffer(ByteBuffer keyBuffer) {
@@ -102,7 +130,6 @@ public class IntegrityCheckIndex {
 
             return allocatedBuffer.flip();
         }
-
     }
 
 }
