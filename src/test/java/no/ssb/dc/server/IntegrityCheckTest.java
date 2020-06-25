@@ -1,9 +1,5 @@
 package no.ssb.dc.server;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SequenceWriter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.config.StoreBasedDynamicConfiguration;
@@ -16,6 +12,7 @@ import no.ssb.dc.server.component.ContentStoreComponent;
 import no.ssb.dc.server.service.IntegrityCheckIndex;
 import no.ssb.dc.server.service.IntegrityCheckJob;
 import no.ssb.dc.server.service.IntegrityCheckJobSummary;
+import no.ssb.dc.server.service.JsonArrayWriter;
 import no.ssb.dc.server.service.LmdbEnvironment;
 import no.ssb.dc.test.client.ResponseHelper;
 import no.ssb.dc.test.client.TestClient;
@@ -24,12 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class IntegrityCheckTest {
 
@@ -152,58 +146,4 @@ public class IntegrityCheckTest {
         }
     }
 
-    static class JsonArrayWriter implements AutoCloseable {
-        private final FileOutputStream out;
-        private final SequenceWriter sequenceWriter;
-        private final int flushAtCount;
-        private final AtomicInteger counter = new AtomicInteger(0);
-        private final ObjectMapper mapper;
-        private final JsonParser jsonParser;
-
-        JsonArrayWriter(Path workPath, String filename, int flushAtCount) {
-            this.flushAtCount = flushAtCount;
-            try {
-                Files.createDirectories(workPath);
-                out = new FileOutputStream(workPath.resolve(filename).toFile());
-                jsonParser = JsonParser.createJsonParser();
-                mapper = jsonParser.mapper();
-                ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
-                sequenceWriter = writer.writeValues(out);
-                sequenceWriter.init(true);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        JsonParser parser() {
-            return jsonParser;
-        }
-
-        ObjectMapper mapper() {
-            return mapper;
-        }
-
-        void write(JsonNode node) {
-            try {
-                sequenceWriter.write(node);
-                if (counter.incrementAndGet() == flushAtCount) {
-                    sequenceWriter.flush();
-                    counter.set(0);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public void close() {
-            try {
-                sequenceWriter.flush();
-                sequenceWriter.close();
-                out.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 }
