@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -34,6 +35,10 @@ public class IntegrityCheckIndex implements AutoCloseable {
         this.keyBufferPool = new DirectByteBufferPool(10, lmdbEnvironment.maxKeySize());
         this.contentBufferPool = new DirectByteBufferPool(10, CONTENT_LENGTH);
         this.sequenceDb = lmdbEnvironment.open();
+    }
+
+    public Path getDatabaseDir() {
+        return lmdbEnvironment.getDatabaseDir();
     }
 
     Txn<ByteBuffer> getWriteTransaction() {

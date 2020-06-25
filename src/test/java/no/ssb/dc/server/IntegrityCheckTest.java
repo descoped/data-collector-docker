@@ -1,5 +1,10 @@
 package no.ssb.dc.server;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SequenceWriter;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dc.api.content.ContentStore;
@@ -19,8 +24,12 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class IntegrityCheckTest {
 
@@ -64,7 +73,7 @@ public class IntegrityCheckTest {
         producerThread.start();
 
         Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
-        LmdbEnvironment.removeDb(dbPath);
+        LmdbEnvironment.removePath(dbPath);
         LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbPath, "2020-test-stream");
         IntegrityCheckIndex index = new IntegrityCheckIndex(lmdbEnvironment, 50);
         IntegrityCheckJobSummary summary = new IntegrityCheckJobSummary(index);
@@ -123,7 +132,78 @@ public class IntegrityCheckTest {
     }
 
     @Test
-    void buildLmdbPositionStore() {
+    void writeJsonChunk() throws IOException {
+        Path jsonExportPath = CommonUtils.currentPath().resolve("target").resolve("lmdb").resolve("export");
+        LmdbEnvironment.removePath(jsonExportPath);
+        try (JsonArrayWriter writer = new JsonArrayWriter(jsonExportPath, "summary.json", 50)) {
+            {
+                ObjectNode rootNode = writer.parser().createObjectNode();
+                ObjectNode childNode = writer.parser().createObjectNode();
+                childNode.put("key", "value");
+                rootNode.set("field", childNode);
+                LOG.trace("{}", writer.parser().toPrettyJSON(rootNode));
+                writer.write(rootNode);
+            }
+            {
+                ObjectNode rootNode = writer.parser().createObjectNode();
+                rootNode.put("field2", "value");
+                writer.write(rootNode);
+            }
+        }
+    }
 
+    static class JsonArrayWriter implements AutoCloseable {
+        private final FileOutputStream out;
+        private final SequenceWriter sequenceWriter;
+        private final int flushAtCount;
+        private final AtomicInteger counter = new AtomicInteger(0);
+        private final ObjectMapper mapper;
+        private final JsonParser jsonParser;
+
+        JsonArrayWriter(Path workPath, String filename, int flushAtCount) {
+            this.flushAtCount = flushAtCount;
+            try {
+                Files.createDirectories(workPath);
+                out = new FileOutputStream(workPath.resolve(filename).toFile());
+                jsonParser = JsonParser.createJsonParser();
+                mapper = jsonParser.mapper();
+                ObjectWriter writer = mapper.writerWithDefaultPrettyPrinter();
+                sequenceWriter = writer.writeValues(out);
+                sequenceWriter.init(true);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        JsonParser parser() {
+            return jsonParser;
+        }
+
+        ObjectMapper mapper() {
+            return mapper;
+        }
+
+        void write(JsonNode node) {
+            try {
+                sequenceWriter.write(node);
+                if (counter.incrementAndGet() == flushAtCount) {
+                    sequenceWriter.flush();
+                    counter.set(0);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public void close() {
+            try {
+                sequenceWriter.flush();
+                sequenceWriter.close();
+                out.close();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 }

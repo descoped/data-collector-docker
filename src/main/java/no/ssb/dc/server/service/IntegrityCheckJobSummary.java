@@ -7,9 +7,9 @@ import no.ssb.dc.api.content.ContentStreamBuffer;
 import no.ssb.dc.api.health.HealthResourceUtils;
 import no.ssb.dc.api.ulid.ULIDGenerator;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,7 +27,6 @@ public class IntegrityCheckJobSummary {
     private final AtomicReference<String> lastPosition = new AtomicReference<>();
     private final AtomicReference<String> currentPosition = new AtomicReference<>();
     private final AtomicLong positionCount = new AtomicLong();
-    private final Map<String, List<PositionInfo>> positionCounter = new LinkedHashMap<>();
     private final IntegrityCheckIndex index;
 
     public IntegrityCheckJobSummary(IntegrityCheckIndex index) {
@@ -71,24 +70,27 @@ public class IntegrityCheckJobSummary {
         return this;
     }
 
-    IntegrityCheckJobSummary updatePositionCounter(ContentStreamBuffer buffer) {
+    IntegrityCheckJobSummary index(ContentStreamBuffer buffer) {
         index.writeSequence(buffer.ulid(), buffer.position());
-        synchronized (this) {
-            positionCounter.computeIfAbsent(buffer.position(), counter -> new ArrayList<>()).add(new PositionInfo(buffer));
-        }
         return this;
     }
 
     public Summary build() {
         // index.readSequence(); and create json summary file + make upload to client feature
-        Map<String, List<PositionInfo>> duplicatePositions = new LinkedHashMap<>(positionCounter.size());
-        synchronized (this) {
-            for (Map.Entry<String, List<PositionInfo>> entry : positionCounter.entrySet()) {
-                if (entry.getValue().size() > 1) {
-                    duplicatePositions.put(entry.getKey(), entry.getValue());
-                }
+        index.commit();
+        AtomicReference<IntegrityCheckIndex.SequenceKey> prevSequenceKey = new AtomicReference<>();
+        Path path = index.getDatabaseDir();
+        index.readSequence(sequenceKey -> {
+            if (prevSequenceKey.get() == null) {
+                prevSequenceKey.set(sequenceKey);
+                return;
             }
-        }
+            if (prevSequenceKey.get().position.equals(sequenceKey.position)) {
+                // make counters for position and increment duplicateCount
+            }
+            prevSequenceKey.set(sequenceKey);
+        });
+        index.close();
         return new Summary(
                 topic.get(),
                 running.get(),
@@ -98,7 +100,7 @@ public class IntegrityCheckJobSummary {
                 lastPosition.get(),
                 currentPosition.get(),
                 positionCount.get(),
-                duplicatePositions
+                null
         );
     }
 

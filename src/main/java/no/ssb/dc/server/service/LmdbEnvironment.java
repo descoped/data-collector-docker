@@ -1,7 +1,6 @@
 package no.ssb.dc.server.service;
 
 import no.ssb.config.DynamicConfiguration;
-import org.lmdbjava.ByteBufferProxy;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
@@ -34,7 +33,7 @@ public class LmdbEnvironment implements AutoCloseable {
                 configuration.evaluateToInt("data.collector.integrityCheck.dbSizeInMb") : 50;
     }
 
-    public static void removeDb(Path path) throws IOException {
+    public static void removePath(Path path) throws IOException {
         if (path.toFile().exists())
             Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
     }
@@ -45,6 +44,10 @@ public class LmdbEnvironment implements AutoCloseable {
 
     public int maxKeySize() {
         return env.getMaxKeySize();
+    }
+
+    public Path getDatabaseDir() {
+        return databaseDir;
     }
 
     private void createDirectories(Path databaseDir) {
@@ -58,7 +61,7 @@ public class LmdbEnvironment implements AutoCloseable {
     }
 
     private Env<ByteBuffer> createEnvironment() {
-        return Env.create(ByteBufferProxy.PROXY_OPTIMAL)
+        return Env.create()
                 // LMDB also needs to know how large our DB might be. Over-estimating is OK.
                 .setMapSize(mapSize * 1024 * 1024)
                 // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.

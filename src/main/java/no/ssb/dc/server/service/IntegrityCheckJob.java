@@ -51,7 +51,7 @@ public class IntegrityCheckJob {
                         test = false;
                     }
 
-                    summary.updatePositionCounter(buffer);
+                    summary.index(buffer);
 
                     if (lastPosition != null && lastPosition.equals(buffer.position())) {
                         LOG.info("Reached en of stream for topic: {}", topic);

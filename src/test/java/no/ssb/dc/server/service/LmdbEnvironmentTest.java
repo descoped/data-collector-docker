@@ -17,7 +17,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static no.ssb.dc.server.service.LmdbEnvironment.removeDb;
+import static no.ssb.dc.server.service.LmdbEnvironment.removePath;
 
 /**
  * Test requires vm arg: --add-opens java.base/java.nio=lmdbjava --add-exports=java.base/sun.nio.ch=lmdbjava
@@ -31,7 +31,7 @@ public class LmdbEnvironmentTest {
     @Test
     void testSequence() throws IOException {
         Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
-        removeDb(dbPath);
+        removePath(dbPath);
 
         try (LmdbEnvironment environment = new LmdbEnvironment(null, dbPath, "test-stream")) {
             try (IntegrityCheckIndex index = new IntegrityCheckIndex(environment, 50)) {
