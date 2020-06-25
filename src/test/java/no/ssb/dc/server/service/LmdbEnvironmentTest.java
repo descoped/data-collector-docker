@@ -34,47 +34,49 @@ public class LmdbEnvironmentTest {
         removeDb(dbPath);
 
         try (LmdbEnvironment environment = new LmdbEnvironment(dbPath, "test-stream")) {
-            IntegrityCheckIndex index = new IntegrityCheckIndex(environment);
+            try (IntegrityCheckIndex index = new IntegrityCheckIndex(environment, 50)) {
 
-            for (int n = 1; n < 100; n++) {
-                {
-                    ULID.Value ulid = ULIDGenerator.nextMonotonicUlid(stateHolder);
-                    index.writeSequence(ulid, String.valueOf(n));
+                for (int n = 1; n < 100; n++) {
+                    {
+                        ULID.Value ulid = ULIDGenerator.nextMonotonicUlid(stateHolder);
+                        index.writeSequence(ulid, String.valueOf(n));
+                    }
+
+                    if (n == 11 || n == 88) {
+                        ULID.Value ulid = ULIDGenerator.nextMonotonicUlid(stateHolder);
+                        index.writeSequence(ulid, String.valueOf(n));
+                    }
+
+                    if (n == 88) {
+                        ULID.Value ulid = ULIDGenerator.nextMonotonicUlid(stateHolder);
+                        index.writeSequence(ulid, String.valueOf(n));
+                    }
                 }
+                index.commit();
 
-                if (n == 11 || n == 88) {
-                    ULID.Value ulid = ULIDGenerator.nextMonotonicUlid(stateHolder);
-                    index.writeSequence(ulid, String.valueOf(n));
-                }
-
-                if (n == 88) {
-                    ULID.Value ulid = ULIDGenerator.nextMonotonicUlid(stateHolder);
-                    index.writeSequence(ulid, String.valueOf(n));
-                }
-            }
-
-            AtomicReference<IntegrityCheckIndex.SequenceKey> prevSequenceKey = new AtomicReference<>();
-            Map<String, Set<IntegrityCheckIndex.SequenceKey>> duplicateMap = new LinkedHashMap<>();
-            index.readSequence(sequenceKey -> {
-                if (prevSequenceKey.get() == null) {
+                AtomicReference<IntegrityCheckIndex.SequenceKey> prevSequenceKey = new AtomicReference<>();
+                Map<String, Set<IntegrityCheckIndex.SequenceKey>> duplicateMap = new LinkedHashMap<>();
+                index.readSequence(sequenceKey -> {
+                    if (prevSequenceKey.get() == null) {
+                        prevSequenceKey.set(sequenceKey);
+                        return;
+                    }
+                    if (prevSequenceKey.get().position.equals(sequenceKey.position)) {
+                        duplicateMap.computeIfAbsent(prevSequenceKey.get().position, duplicateList -> new TreeSet<>()).add(prevSequenceKey.get());
+                        duplicateMap.get(sequenceKey.position).add(sequenceKey);
+                    }
                     prevSequenceKey.set(sequenceKey);
-                    return;
-                }
-                if (prevSequenceKey.get().position.equals(sequenceKey.position)) {
-                    duplicateMap.computeIfAbsent(prevSequenceKey.get().position, duplicateList -> new TreeSet<>()).add(prevSequenceKey.get());
-                    duplicateMap.get(sequenceKey.position).add(sequenceKey);
-                }
-                prevSequenceKey.set(sequenceKey);
-            });
+                });
 
-            duplicateMap.forEach((sequenceKey, duplicateList) ->
-                    LOG.trace("{}/{}", sequenceKey, duplicateList.stream().map(key ->
-                            Long.toString(key.ulid.timestamp()+key.ulid.getLeastSignificantBits())).collect(Collectors.joining(",")))
-            );
+                duplicateMap.forEach((sequenceKey, duplicateList) ->
+                        LOG.trace("{}/{}", sequenceKey, duplicateList.stream().map(key ->
+                                Long.toString(key.ulid.timestamp() + key.ulid.getLeastSignificantBits())).collect(Collectors.joining(",")))
+                );
 
-            index.readSequence(sequenceKey -> {
-                LOG.trace("{}/{}", sequenceKey.position, ULIDGenerator.toUUID(sequenceKey.ulid));
-            });
+                index.readSequence(sequenceKey -> {
+                    LOG.trace("{}/{}", sequenceKey.position, ULIDGenerator.toUUID(sequenceKey.ulid));
+                });
+            }
         }
     }
 

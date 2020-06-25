@@ -15,22 +15,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 
-class LmdbEnvironment implements AutoCloseable {
+public class LmdbEnvironment implements AutoCloseable {
 
-    final Path databaseDir;
-    final Env<ByteBuffer> env;
-    final String topic;
-    final AtomicBoolean closed = new AtomicBoolean(false);
+    private final Path databaseDir;
+    private final Env<ByteBuffer> env;
+    private final String topic;
+    private final AtomicBoolean closed = new AtomicBoolean(false);
     private Dbi<ByteBuffer> db;
 
-    LmdbEnvironment(Path databaseDir, String topic) {
+    public LmdbEnvironment(Path databaseDir, String topic) {
         this.databaseDir = databaseDir.resolve(topic);
         createDirectories(this.databaseDir);
         this.topic = topic;
         env = createEnvironment();
+        System.out.printf("MaxKeySize: %s%n", env.getMaxKeySize());
     }
 
-    static void removeDb(Path path) throws IOException {
+    public Env<ByteBuffer> env() {
+        return env;
+    }
+
+    public static void removeDb(Path path) throws IOException {
         if (path.toFile().exists())
             Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
     }

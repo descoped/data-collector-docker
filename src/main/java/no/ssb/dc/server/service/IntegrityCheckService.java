@@ -64,7 +64,7 @@ public class IntegrityCheckService implements Service {
         if (isJobRunning(topic)) {
             return;
         }
-        IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, new IntegrityCheckJobSummary());
+        IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, new IntegrityCheckJobSummary(null));
         CompletableFuture<IntegrityCheckJob> future = CompletableFuture.supplyAsync(() -> {
             job.consume(topic);
             return job;

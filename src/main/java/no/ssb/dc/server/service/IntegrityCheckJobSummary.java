@@ -28,6 +28,11 @@ public class IntegrityCheckJobSummary {
     private final AtomicReference<String> currentPosition = new AtomicReference<>();
     private final AtomicLong positionCount = new AtomicLong();
     private final Map<String, List<PositionInfo>> positionCounter = new LinkedHashMap<>();
+    private final IntegrityCheckIndex index;
+
+    public IntegrityCheckJobSummary(IntegrityCheckIndex index) {
+        this.index = index;
+    }
 
     IntegrityCheckJobSummary setTopic(String topic) {
         this.topic.set(topic);
@@ -67,6 +72,7 @@ public class IntegrityCheckJobSummary {
     }
 
     IntegrityCheckJobSummary updatePositionCounter(ContentStreamBuffer buffer) {
+        index.writeSequence(buffer.ulid(), buffer.position());
         synchronized (this) {
             positionCounter.computeIfAbsent(buffer.position(), counter -> new ArrayList<>()).add(new PositionInfo(buffer));
         }
@@ -74,6 +80,7 @@ public class IntegrityCheckJobSummary {
     }
 
     public Summary build() {
+        // index.readSequence(); and create json summary file + make upload to client feature
         Map<String, List<PositionInfo>> duplicatePositions = new LinkedHashMap<>(positionCounter.size());
         synchronized (this) {
             for (Map.Entry<String, List<PositionInfo>> entry : positionCounter.entrySet()) {

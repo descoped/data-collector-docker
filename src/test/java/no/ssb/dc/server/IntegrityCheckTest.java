@@ -5,10 +5,13 @@ import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dc.api.content.ContentStore;
 import no.ssb.dc.api.content.ContentStream;
 import no.ssb.dc.api.content.ContentStreamProducer;
+import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.api.util.JsonParser;
 import no.ssb.dc.server.component.ContentStoreComponent;
+import no.ssb.dc.server.service.IntegrityCheckIndex;
 import no.ssb.dc.server.service.IntegrityCheckJob;
 import no.ssb.dc.server.service.IntegrityCheckJobSummary;
+import no.ssb.dc.server.service.LmdbEnvironment;
 import no.ssb.dc.test.client.ResponseHelper;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
@@ -17,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 public class IntegrityCheckTest {
 
@@ -58,7 +62,11 @@ public class IntegrityCheckTest {
         Thread producerThread = new Thread(() -> produceMessages(contentStore.contentStream()));
         producerThread.start();
 
-        IntegrityCheckJobSummary summary = new IntegrityCheckJobSummary();
+        Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
+        LmdbEnvironment.removeDb(dbPath);
+        LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(dbPath, "test-stream");
+        IntegrityCheckIndex index = new IntegrityCheckIndex(lmdbEnvironment, 50);
+        IntegrityCheckJobSummary summary = new IntegrityCheckJobSummary(index);
         IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, summary);
         job.consume("2020-test-stream");
 

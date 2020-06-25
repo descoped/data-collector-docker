@@ -4,31 +4,60 @@ import de.huxhorn.sulky.ulid.ULID;
 import org.lmdbjava.CursorIterable;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Txn;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class IntegrityCheckIndex {
+public class IntegrityCheckIndex implements AutoCloseable {
 
-    static short FIXED_POSITION_LENGTH = 32;
-    static int SEQUENCE_KEY_LENGTH = FIXED_POSITION_LENGTH + 8 + 8;
-    static int CONTENT_LENGTH = 256;
+    private static final Logger LOG = LoggerFactory.getLogger(IntegrityCheckIndex.class);
+    static short OFFSET_POSITION_LENGTH = 1;
+    static short ALLOCATED_POSITION_LENGTH = 64;
+    static short MOST_OR_LEAST_SIGNIFICANT_BYTES_LENGTH = 8;
+    static int SEQUENCE_KEY_LENGTH = OFFSET_POSITION_LENGTH + ALLOCATED_POSITION_LENGTH + (MOST_OR_LEAST_SIGNIFICANT_BYTES_LENGTH * 2);
+    static int CONTENT_LENGTH = 0;
 
     private final LmdbEnvironment lmdbEnvironment;
     private final DirectByteBufferPool keyBufferPool;
     private final DirectByteBufferPool contentBufferPool;
     private final Dbi<ByteBuffer> sequenceDb;
+    private final AtomicLong flushCounter = new AtomicLong();
+    private final int flushBufferCount;
+    private Txn<ByteBuffer> txn;
 
-    public IntegrityCheckIndex(LmdbEnvironment lmdbEnvironment) {
+    public IntegrityCheckIndex(LmdbEnvironment lmdbEnvironment, int flushBufferCount) {
         this.lmdbEnvironment = lmdbEnvironment;
+        this.flushBufferCount = flushBufferCount;
         this.keyBufferPool = new DirectByteBufferPool(25, SEQUENCE_KEY_LENGTH);
         this.contentBufferPool = new DirectByteBufferPool(25, CONTENT_LENGTH);
         this.sequenceDb = lmdbEnvironment.open();
+    }
+
+    Txn<ByteBuffer> getWriteTransaction() {
+        if (txn == null) {
+            txn = lmdbEnvironment.env().txnWrite();
+        }
+        if (flushCounter.incrementAndGet() == flushBufferCount) {
+            txn.commit();
+            txn.close();
+            txn = lmdbEnvironment.env().txnWrite();
+            flushCounter.set(0);
+        }
+        return txn;
+    }
+
+    public void commit() {
+        if (flushCounter.get() > 0) {
+            flushCounter.set(flushBufferCount - 1);
+            try (Txn<ByteBuffer> txn = getWriteTransaction()) {
+            }
+        }
     }
 
     void writeSequence(ULID.Value ulid, String position) {
@@ -39,10 +68,8 @@ public class IntegrityCheckIndex {
             ByteBuffer contentBuffer = contentBufferPool.acquire();
             try {
                 contentBuffer.flip();
-                try (Txn<ByteBuffer> txn = lmdbEnvironment.env.txnWrite()) {
-                    sequenceDb.put(txn, keyBuffer, contentBuffer);
-                    txn.commit();
-                }
+                Txn<ByteBuffer> txn = getWriteTransaction();
+                sequenceDb.put(txn, keyBuffer, contentBuffer);
             } finally {
                 contentBufferPool.release(contentBuffer);
             }
@@ -52,19 +79,21 @@ public class IntegrityCheckIndex {
     }
 
     void readSequence(Consumer<SequenceKey> visit) {
-        try (Txn<ByteBuffer> txn = lmdbEnvironment.env.txnRead()) {
-            Iterator<CursorIterable.KeyVal<ByteBuffer>> it = sequenceDb.iterate(txn).iterator();
-            while (it.hasNext()) {
-                CursorIterable.KeyVal<ByteBuffer> next = it.next();
+        try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnRead()) {
+            for (CursorIterable.KeyVal<ByteBuffer> next : sequenceDb.iterate(txn)) {
                 ByteBuffer keyBuffer = next.key();
                 SequenceKey sequenceKey = SequenceKey.fromByteBuffer(keyBuffer);
                 visit.accept(sequenceKey);
             }
         }
-
     }
 
-    static class SequenceKey implements Comparable<SequenceKey>  {
+    @Override
+    public void close() {
+        commit();
+    }
+
+    static class SequenceKey implements Comparable<SequenceKey> {
         final ULID.Value ulid;
         final String position;
 
@@ -73,12 +102,24 @@ public class IntegrityCheckIndex {
             this.position = position;
         }
 
-        static byte[] trim(byte[] bytes) {
-            int i = 0;
-            while (i < bytes.length && bytes[i] == 0) {
-                i++;
-            }
-            return Arrays.copyOfRange(bytes, i, bytes.length);
+        static SequenceKey fromByteBuffer(ByteBuffer keyBuffer) {
+            int positionLength = keyBuffer.get();
+            byte[] positionBytes = new byte[positionLength];
+            keyBuffer.get(positionBytes);
+            long ulidMostSignificantBits = keyBuffer.getLong();
+            long ulidLeastSignificantBits = keyBuffer.getLong();
+            String position = new String(positionBytes, UTF_8);
+            ULID.Value ulid = new ULID.Value(ulidMostSignificantBits, ulidLeastSignificantBits);
+            return new SequenceKey(ulid, position);
+        }
+
+        ByteBuffer toByteBuffer(ByteBuffer allocatedBuffer) {
+            byte[] keySrc = position.getBytes(UTF_8);
+            allocatedBuffer.put((byte) keySrc.length);
+            allocatedBuffer.put(keySrc);
+            allocatedBuffer.putLong(ulid.getMostSignificantBits());
+            allocatedBuffer.putLong(ulid.getLeastSignificantBits());
+            return allocatedBuffer.flip();
         }
 
         @Override
@@ -106,29 +147,6 @@ public class IntegrityCheckIndex {
                     "ulid=" + ulid +
                     ", position='" + position + '\'' +
                     '}';
-        }
-
-        static SequenceKey fromByteBuffer(ByteBuffer keyBuffer) {
-            int positionLength = keyBuffer.get();
-            byte[] positionBytes = new byte[positionLength];
-            keyBuffer.get(positionBytes);
-            long ulidMostSignificantBits = keyBuffer.getLong();
-            long ulidLeastSignificantBits = keyBuffer.getLong();
-
-            String position = new String(positionBytes, UTF_8);
-            ULID.Value ulid = new ULID.Value(ulidMostSignificantBits, ulidLeastSignificantBits);
-
-            return new SequenceKey(ulid, position);
-        }
-
-        ByteBuffer toByteBuffer(ByteBuffer allocatedBuffer) {
-            byte[] keySrc = position.getBytes(UTF_8);
-            allocatedBuffer.put((byte)keySrc.length);
-            allocatedBuffer.put(keySrc);
-            allocatedBuffer.putLong(ulid.getMostSignificantBits());
-            allocatedBuffer.putLong(ulid.getLeastSignificantBits());
-
-            return allocatedBuffer.flip();
         }
     }
 
