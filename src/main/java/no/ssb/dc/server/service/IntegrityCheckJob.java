@@ -142,6 +142,7 @@ public class IntegrityCheckJob {
             });
         }
 
+        summary.setReportPath(reportPath);
         summary.setDuplicateReportId(reportId);
         summary.setDuplicatePositionStats(duplicatePositionCounter);
     }

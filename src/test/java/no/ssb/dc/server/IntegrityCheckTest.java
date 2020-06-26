@@ -116,13 +116,17 @@ public class IntegrityCheckTest {
         {
             while(true) {
                 ResponseHelper<String> response = client.get("/check-integrity/2020-test-stream");
-                LOG.trace("job-summary: {}", response.expect200Ok().body());
                 JsonNode statusNode = JsonParser.createJsonParser().fromJson(response.body(), JsonNode.class).get("status");
                 if ("CLOSED".equals(statusNode.asText())) {
                     break;
                 }
                 Thread.sleep(250);
             }
+        }
+
+        {
+            ResponseHelper<String> response = client.get("/check-integrity/2020-test-stream/full");
+            LOG.trace("job-full-summary:\n{}", response.expect200Ok().body());
         }
 
         // TODO add a test that produces enough messages to keep job running, so it can be canceled

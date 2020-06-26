@@ -7,6 +7,7 @@ import de.huxhorn.sulky.ulid.ULID;
 import no.ssb.dc.api.content.ContentStreamBuffer;
 import no.ssb.dc.api.health.HealthResourceUtils;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ public class IntegrityCheckJobSummary {
     private final AtomicReference<String> lastPosition = new AtomicReference<>();
     private final AtomicReference<String> currentPosition = new AtomicReference<>();
     private final AtomicLong positionCount = new AtomicLong();
+    private final AtomicReference<Path> duplicateReportPath = new AtomicReference<>();
     private final AtomicReference<String> duplicateReportId = new AtomicReference<>();
     private final AtomicLong duplicatePositions = new AtomicLong();
     private final AtomicLong affectedPositions = new AtomicLong();
@@ -71,6 +73,11 @@ public class IntegrityCheckJobSummary {
         return this;
     }
 
+    public IntegrityCheckJobSummary setReportPath(Path reportPath) {
+        duplicateReportPath.set(reportPath);
+        return this;
+    }
+
     public IntegrityCheckJobSummary setDuplicateReportId(String reportId) {
         duplicateReportId.set(reportId);
         return this;
@@ -98,6 +105,7 @@ public class IntegrityCheckJobSummary {
                 positionCount.get(),
                 duplicatePositions.get(),
                 affectedPositions.get(),
+                duplicateReportPath.get(),
                 duplicateReportId.get()
         );
         return summary;
@@ -139,11 +147,12 @@ public class IntegrityCheckJobSummary {
         @JsonProperty public long checkedPositions;
         @JsonProperty public long duplicatePositions;
         @JsonProperty public long affectedPositions;
-        @JsonIgnore final String reportId;
+        @JsonIgnore public final Path reportPath;
+        @JsonIgnore public final String reportId;
 
         public Summary(String topic, boolean running, long started, long ended,
                        String firstPosition, String lastPosition, String currentPosition, long checkedPositions,
-                       long duplicatePositions, long affectedPositions, String reportId) {
+                       long duplicatePositions, long affectedPositions, Path reportPath, String reportId) {
             this.topic = topic;
             this.status = running ? "RUNNING" : "CLOSED";
             this.started = Instant.ofEpochMilli(started).toString();
@@ -155,6 +164,7 @@ public class IntegrityCheckJobSummary {
             this.checkedPositions = checkedPositions;
             this.duplicatePositions = duplicatePositions;
             this.affectedPositions = affectedPositions;
+            this.reportPath = reportPath;
             this.reportId = reportId;
         }
     }
