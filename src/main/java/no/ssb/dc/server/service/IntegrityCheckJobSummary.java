@@ -5,11 +5,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huxhorn.sulky.ulid.ULID;
 import no.ssb.dc.api.content.ContentStreamBuffer;
 import no.ssb.dc.api.health.HealthResourceUtils;
-import no.ssb.dc.api.ulid.ULIDGenerator;
 
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -27,10 +26,10 @@ public class IntegrityCheckJobSummary {
     private final AtomicReference<String> lastPosition = new AtomicReference<>();
     private final AtomicReference<String> currentPosition = new AtomicReference<>();
     private final AtomicLong positionCount = new AtomicLong();
-    private final IntegrityCheckIndex index;
+    private final AtomicReference<String> duplicateReportId = new AtomicReference<>();
+    private final Map<String, AtomicLong> duplicatePositionCount = new LinkedHashMap<>();
 
-    public IntegrityCheckJobSummary(IntegrityCheckIndex index) {
-        this.index = index;
+    public IntegrityCheckJobSummary() {
     }
 
     IntegrityCheckJobSummary setTopic(String topic) {
@@ -70,27 +69,17 @@ public class IntegrityCheckJobSummary {
         return this;
     }
 
-    IntegrityCheckJobSummary index(ContentStreamBuffer buffer) {
-        index.writeSequence(buffer.ulid(), buffer.position());
+    public IntegrityCheckJobSummary setDuplicateReportId(String reportId) {
+        duplicateReportId.set(reportId);
+        return this;
+    }
+
+    IntegrityCheckJobSummary updateDuplicatePositionCounters(ULID.Value ulid, String position) {
+        duplicatePositionCount.computeIfAbsent(position, counter -> new AtomicLong()).incrementAndGet();
         return this;
     }
 
     public Summary build() {
-        // index.readSequence(); and create json summary file + make upload to client feature
-        index.commit();
-        AtomicReference<IntegrityCheckIndex.SequenceKey> prevSequenceKey = new AtomicReference<>();
-        Path path = index.getDatabaseDir();
-        index.readSequence(sequenceKey -> {
-            if (prevSequenceKey.get() == null) {
-                prevSequenceKey.set(sequenceKey);
-                return;
-            }
-            if (prevSequenceKey.get().position.equals(sequenceKey.position)) {
-                // make counters for position and increment duplicateCount
-            }
-            prevSequenceKey.set(sequenceKey);
-        });
-        index.close();
         return new Summary(
                 topic.get(),
                 running.get(),
@@ -137,11 +126,11 @@ public class IntegrityCheckJobSummary {
         @JsonProperty public String firstPosition;
         @JsonProperty public String lastPosition;
         @JsonProperty public String currentPosition;
-        @JsonProperty public long positionCount;
+        @JsonProperty public long checkedPositions;
         @JsonProperty public List<PositionSummary> duplicates = new ArrayList<>();
 
         public Summary(String topic, boolean running, long started, long ended,
-                       String firstPosition, String lastPosition, String currentPosition, long positionCount,
+                       String firstPosition, String lastPosition, String currentPosition, long checkedPositions,
                        Map<String, List<PositionInfo>> duplicatePositions) {
             this.topic = topic;
             this.status = running ? "RUNNING" : "CLOSED";
@@ -151,17 +140,17 @@ public class IntegrityCheckJobSummary {
             this.firstPosition = firstPosition;
             this.lastPosition = lastPosition;
             this.currentPosition = currentPosition;
-            this.positionCount = positionCount;
-            for(Map.Entry<String, List<PositionInfo>> entry : duplicatePositions.entrySet()) {
-                String position = entry.getKey();
-                int count = entry.getValue().size();
-                List<String> ulidList = new ArrayList<>();
-                for (PositionInfo info : entry.getValue()) {
-                    String s = ULIDGenerator.toUUID(info.ulid).toString();
-                    ulidList.add(s);
-                }
-                duplicates.add(new PositionSummary(position, count, ulidList));
-            }
+            this.checkedPositions = checkedPositions;
+//            for(Map.Entry<String, List<PositionInfo>> entry : duplicatePositions.entrySet()) {
+//                String position = entry.getKey();
+//                int count = entry.getValue().size();
+//                List<String> ulidList = new ArrayList<>();
+//                for (PositionInfo info : entry.getValue()) {
+//                    String s = ULIDGenerator.toUUID(info.ulid).toString();
+//                    ulidList.add(s);
+//                }
+//                duplicates.add(new PositionSummary(position, count, ulidList));
+//            }
         }
     }
 

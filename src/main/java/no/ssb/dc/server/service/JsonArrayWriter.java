@@ -15,13 +15,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class JsonArrayWriter implements AutoCloseable {
     private final FileOutputStream out;
     private final SequenceWriter sequenceWriter;
-    private final int flushAtCount;
+    private final int flushBufferCount;
     private final AtomicInteger counter = new AtomicInteger(0);
     private final ObjectMapper mapper;
     private final JsonParser jsonParser;
 
-    public JsonArrayWriter(Path workPath, String filename, int flushAtCount) {
-        this.flushAtCount = flushAtCount;
+    public JsonArrayWriter(Path workPath, String filename, int flushBufferCount) {
+        this.flushBufferCount = flushBufferCount;
         try {
             Files.createDirectories(workPath);
             out = new FileOutputStream(workPath.resolve(filename).toFile());
@@ -46,7 +46,7 @@ public class JsonArrayWriter implements AutoCloseable {
     public void write(JsonNode node) {
         try {
             sequenceWriter.write(node);
-            if (counter.incrementAndGet() == flushAtCount) {
+            if (counter.incrementAndGet() == flushBufferCount) {
                 sequenceWriter.flush();
                 counter.set(0);
             }

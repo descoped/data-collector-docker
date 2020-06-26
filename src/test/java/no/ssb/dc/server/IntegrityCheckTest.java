@@ -17,7 +17,6 @@ import no.ssb.dc.server.service.LmdbEnvironment;
 import no.ssb.dc.test.client.ResponseHelper;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,7 @@ public class IntegrityCheckTest {
     private static final Logger LOG = LoggerFactory.getLogger(IntegrityCheckJob.class);
 
     static void produceMessages(ContentStream contentStream) {
-        try (ContentStreamProducer producer = contentStream.producer("2020-test-stream")) {
+        try (ContentStreamProducer producer = contentStream.producer("test-stream")) {
             for (int n = 0; n < 100; n++) {
                 producer.publishBuilders(producer.builder().position(String.valueOf(n)).put("entry", "DATA".getBytes(StandardCharsets.UTF_8)));
 
@@ -52,7 +51,6 @@ public class IntegrityCheckTest {
         }
     }
 
-    @Disabled
     @Test
     void testIntegrityChecker() throws Exception {
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
@@ -70,11 +68,12 @@ public class IntegrityCheckTest {
 
         Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
         LmdbEnvironment.removePath(dbPath);
-        LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbPath, "2020-test-stream");
-        IntegrityCheckIndex index = new IntegrityCheckIndex(lmdbEnvironment, 50);
-        IntegrityCheckJobSummary summary = new IntegrityCheckJobSummary(index);
-        IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, summary);
-        job.consume("2020-test-stream");
+        LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbPath, "test-stream");
+        IntegrityCheckJobSummary summary = new IntegrityCheckJobSummary();
+        try (IntegrityCheckIndex index = new IntegrityCheckIndex(lmdbEnvironment, 50)) {
+            IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, index, summary);
+            job.consume("test-stream");
+        }
 
         producerThread.join();
         contentStoreComponent.close();
@@ -83,7 +82,6 @@ public class IntegrityCheckTest {
         LOG.trace("summary: {}", json);
     }
 
-    @Disabled
     @Test
     void testIntegrityCheckerController() throws InterruptedException {
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
@@ -123,12 +121,11 @@ public class IntegrityCheckTest {
             LOG.trace("cancel-job: {}", response.expectAnyOf(400).body());
         }
 
-        // Add a test that produces enough messages to keep job running, so it can be canceled
+        // TODO add a test that produces enough messages to keep job running, so it can be canceled
 
         server.stop();
     }
 
-    @Disabled
     @Test
     void writeJsonChunk() throws IOException {
         Path jsonExportPath = CommonUtils.currentPath().resolve("target").resolve("lmdb").resolve("export");

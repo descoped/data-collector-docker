@@ -64,13 +64,14 @@ public class IntegrityCheckService implements Service {
         if (isJobRunning(topic)) {
             return;
         }
-        IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, new IntegrityCheckJobSummary(null));
+        IntegrityCheckIndex index = new IntegrityCheckIndex(null, 10000);
+        IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, index, new IntegrityCheckJobSummary());
         CompletableFuture<IntegrityCheckJob> future = CompletableFuture.supplyAsync(() -> {
             job.consume(topic);
             return job;
         }).thenApply(_job -> {
             IntegrityCheckJobSummary.Summary summary = _job.getSummary();
-            LOG.info("Check integrity of topic {} completed successfully at position {}!", summary.topic, summary.positionCount);
+            LOG.info("Check integrity of topic {} completed successfully at position {}!", summary.topic, summary.checkedPositions);
             return _job;
         }).exceptionally(throwable -> {
             LOG.error("Ended exceptionally with error: {}", CommonUtils.captureStackTrace(throwable));

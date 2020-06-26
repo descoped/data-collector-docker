@@ -9,9 +9,10 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -27,7 +28,7 @@ public class IntegrityCheckIndex implements AutoCloseable {
     private final Dbi<ByteBuffer> sequenceDb;
     private final AtomicLong flushCounter = new AtomicLong();
     private final int flushBufferCount;
-    private Txn<ByteBuffer> txn;
+    private Txn<ByteBuffer> writeTransaction;
 
     public IntegrityCheckIndex(LmdbEnvironment lmdbEnvironment, int flushBufferCount) {
         this.lmdbEnvironment = lmdbEnvironment;
@@ -42,16 +43,16 @@ public class IntegrityCheckIndex implements AutoCloseable {
     }
 
     Txn<ByteBuffer> getWriteTransaction() {
-        if (txn == null) {
-            txn = lmdbEnvironment.env().txnWrite();
+        if (writeTransaction == null) {
+            writeTransaction = lmdbEnvironment.env().txnWrite();
         }
         if (flushCounter.incrementAndGet() == flushBufferCount) {
-            txn.commit();
-            txn.close();
-            txn = lmdbEnvironment.env().txnWrite();
+            writeTransaction.commit();
+            writeTransaction.close();
+            writeTransaction = lmdbEnvironment.env().txnWrite();
             flushCounter.set(0);
         }
-        return txn;
+        return writeTransaction;
     }
 
     public void commit() {
@@ -80,12 +81,14 @@ public class IntegrityCheckIndex implements AutoCloseable {
         }
     }
 
-    void readSequence(Consumer<SequenceKey> visit) {
+    void readSequence(BiConsumer<SequenceKey, Boolean> visit) {
         try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnRead()) {
-            for (CursorIterable.KeyVal<ByteBuffer> next : sequenceDb.iterate(txn)) {
+            Iterator<CursorIterable.KeyVal<ByteBuffer>> it = sequenceDb.iterate(txn).iterator();
+            while (it.hasNext()) {
+                CursorIterable.KeyVal<ByteBuffer> next = it.next();
                 ByteBuffer keyBuffer = next.key();
                 SequenceKey sequenceKey = SequenceKey.fromByteBuffer(keyBuffer);
-                visit.accept(sequenceKey);
+                visit.accept(sequenceKey, it.hasNext());
             }
         }
     }
@@ -116,9 +119,9 @@ public class IntegrityCheckIndex implements AutoCloseable {
         }
 
         ByteBuffer toByteBuffer(ByteBuffer allocatedBuffer) {
-            byte[] keySrc = position.getBytes(UTF_8);
-            allocatedBuffer.put((byte) keySrc.length);
-            allocatedBuffer.put(keySrc);
+            byte[] key = position.getBytes(UTF_8);
+            allocatedBuffer.put((byte) key.length);
+            allocatedBuffer.put(key);
             allocatedBuffer.putLong(ulid.getMostSignificantBits());
             allocatedBuffer.putLong(ulid.getLeastSignificantBits());
             return allocatedBuffer.flip();

@@ -3,7 +3,6 @@ package no.ssb.dc.server.service;
 import de.huxhorn.sulky.ulid.ULID;
 import no.ssb.dc.api.ulid.ULIDGenerator;
 import no.ssb.dc.api.util.CommonUtils;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +25,6 @@ public class LmdbEnvironmentTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(LmdbEnvironmentTest.class);
 
-    @Disabled
     @Test
     void testSequence() throws IOException {
         Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
@@ -55,7 +53,7 @@ public class LmdbEnvironmentTest {
 
                 AtomicReference<IntegrityCheckIndex.SequenceKey> prevSequenceKey = new AtomicReference<>();
                 Map<String, Set<IntegrityCheckIndex.SequenceKey>> duplicateMap = new LinkedHashMap<>();
-                index.readSequence(sequenceKey -> {
+                index.readSequence((sequenceKey,hasNext) -> {
                     if (prevSequenceKey.get() == null) {
                         prevSequenceKey.set(sequenceKey);
                         return;
@@ -72,7 +70,7 @@ public class LmdbEnvironmentTest {
                                 Long.toString(key.ulid.timestamp() + key.ulid.getLeastSignificantBits())).collect(Collectors.joining(",")))
                 );
 
-                index.readSequence(sequenceKey -> {
+                index.readSequence((sequenceKey,hasNext) -> {
                     LOG.trace("{}/{}", sequenceKey.position, ULIDGenerator.toUUID(sequenceKey.ulid));
                 });
             }
