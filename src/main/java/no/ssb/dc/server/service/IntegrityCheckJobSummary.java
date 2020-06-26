@@ -1,14 +1,14 @@
 package no.ssb.dc.server.service;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huxhorn.sulky.ulid.ULID;
 import no.ssb.dc.api.content.ContentStreamBuffer;
 import no.ssb.dc.api.health.HealthResourceUtils;
-import no.ssb.dc.api.ulid.ULIDGenerator;
 
+import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +27,14 @@ public class IntegrityCheckJobSummary {
     private final AtomicReference<String> lastPosition = new AtomicReference<>();
     private final AtomicReference<String> currentPosition = new AtomicReference<>();
     private final AtomicLong positionCount = new AtomicLong();
-    private final Map<String, List<PositionInfo>> positionCounter = new LinkedHashMap<>();
+    private final AtomicReference<Path> duplicateReportPath = new AtomicReference<>();
+    private final AtomicReference<String> duplicateReportId = new AtomicReference<>();
+    private final AtomicLong duplicatePositions = new AtomicLong();
+    private final AtomicLong affectedPositions = new AtomicLong();
+    private final Map<String, AtomicLong> duplicatePositionCount = new LinkedHashMap<>();
+
+    public IntegrityCheckJobSummary() {
+    }
 
     IntegrityCheckJobSummary setTopic(String topic) {
         this.topic.set(topic);
@@ -66,23 +73,28 @@ public class IntegrityCheckJobSummary {
         return this;
     }
 
-    IntegrityCheckJobSummary updatePositionCounter(ContentStreamBuffer buffer) {
-        synchronized (this) {
-            positionCounter.computeIfAbsent(buffer.position(), counter -> new ArrayList<>()).add(new PositionInfo(buffer));
-        }
+    public IntegrityCheckJobSummary setReportPath(Path reportPath) {
+        duplicateReportPath.set(reportPath);
+        return this;
+    }
+
+    public IntegrityCheckJobSummary setDuplicateReportId(String reportId) {
+        duplicateReportId.set(reportId);
+        return this;
+    }
+
+    public IntegrityCheckJobSummary setDuplicatePositionStats(Map<String, AtomicLong> duplicatePositionCounter) {
+        AtomicLong duplicatePositionCount = new AtomicLong(0);
+        duplicatePositionCounter.forEach((key, value) -> {
+            duplicatePositionCount.addAndGet(value.get());
+        });
+        duplicatePositions.set(duplicatePositionCount.get());
+        affectedPositions.set(duplicatePositionCounter.size());
         return this;
     }
 
     public Summary build() {
-        Map<String, List<PositionInfo>> duplicatePositions = new LinkedHashMap<>(positionCounter.size());
-        synchronized (this) {
-            for (Map.Entry<String, List<PositionInfo>> entry : positionCounter.entrySet()) {
-                if (entry.getValue().size() > 1) {
-                    duplicatePositions.put(entry.getKey(), entry.getValue());
-                }
-            }
-        }
-        return new Summary(
+        Summary summary = new Summary(
                 topic.get(),
                 running.get(),
                 started.get(),
@@ -91,8 +103,12 @@ public class IntegrityCheckJobSummary {
                 lastPosition.get(),
                 currentPosition.get(),
                 positionCount.get(),
-                duplicatePositions
+                duplicatePositions.get(),
+                affectedPositions.get(),
+                duplicateReportPath.get(),
+                duplicateReportId.get()
         );
+        return summary;
     }
 
     static class PositionInfo {
@@ -128,12 +144,15 @@ public class IntegrityCheckJobSummary {
         @JsonProperty public String firstPosition;
         @JsonProperty public String lastPosition;
         @JsonProperty public String currentPosition;
-        @JsonProperty public long positionCount;
-        @JsonProperty public List<PositionSummary> duplicates = new ArrayList<>();
+        @JsonProperty public long checkedPositions;
+        @JsonProperty public long duplicatePositions;
+        @JsonProperty public long affectedPositions;
+        @JsonIgnore public final Path reportPath;
+        @JsonIgnore public final String reportId;
 
         public Summary(String topic, boolean running, long started, long ended,
-                       String firstPosition, String lastPosition, String currentPosition, long positionCount,
-                       Map<String, List<PositionInfo>> duplicatePositions) {
+                       String firstPosition, String lastPosition, String currentPosition, long checkedPositions,
+                       long duplicatePositions, long affectedPositions, Path reportPath, String reportId) {
             this.topic = topic;
             this.status = running ? "RUNNING" : "CLOSED";
             this.started = Instant.ofEpochMilli(started).toString();
@@ -142,17 +161,11 @@ public class IntegrityCheckJobSummary {
             this.firstPosition = firstPosition;
             this.lastPosition = lastPosition;
             this.currentPosition = currentPosition;
-            this.positionCount = positionCount;
-            for(Map.Entry<String, List<PositionInfo>> entry : duplicatePositions.entrySet()) {
-                String position = entry.getKey();
-                int count = entry.getValue().size();
-                List<String> ulidList = new ArrayList<>();
-                for (PositionInfo info : entry.getValue()) {
-                    String s = ULIDGenerator.toUUID(info.ulid).toString();
-                    ulidList.add(s);
-                }
-                duplicates.add(new PositionSummary(position, count, ulidList));
-            }
+            this.checkedPositions = checkedPositions;
+            this.duplicatePositions = duplicatePositions;
+            this.affectedPositions = affectedPositions;
+            this.reportPath = reportPath;
+            this.reportId = reportId;
         }
     }
 
