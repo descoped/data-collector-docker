@@ -8,6 +8,8 @@ import no.ssb.dc.server.component.ContentStoreComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -64,26 +66,37 @@ public class IntegrityCheckService implements Service {
         if (isJobRunning(topic)) {
             return;
         }
-        IntegrityCheckIndex index = new IntegrityCheckIndex(null, 10000);
-        IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, index, new IntegrityCheckJobSummary());
-        CompletableFuture<IntegrityCheckJob> future = CompletableFuture.supplyAsync(() -> {
-            job.consume(topic);
-            return job;
-        }).thenApply(_job -> {
-            IntegrityCheckJobSummary.Summary summary = _job.getSummary();
-            LOG.info("Check integrity of topic {} completed successfully at position {}!", summary.topic, summary.checkedPositions);
-            return _job;
-        }).exceptionally(throwable -> {
-            LOG.error("Ended exceptionally with error: {}", CommonUtils.captureStackTrace(throwable));
-            if (throwable instanceof RuntimeException) {
-                throw (RuntimeException) throwable;
-            } else if (throwable instanceof Error) {
-                throw (Error) throwable;
-            } else {
-                throw new RuntimeException(throwable);
-            }
-        });
-        jobs.put(topic, job);
+
+        Path dbLocation = configuration.evaluateToString("data.collector.integrityCheck.database.location") == null ||
+                configuration.evaluateToString("data.collector.integrityCheck.database.location").isEmpty() ?
+                CommonUtils.currentPath().resolve("target").resolve("lmdb") :
+                Paths.get(configuration.evaluateToString("data.collector.integrityCheck.database.location"));
+        LmdbEnvironment.removePath(dbLocation);
+
+        LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbLocation, topic);
+        try (IntegrityCheckIndex index = new IntegrityCheckIndex(lmdbEnvironment, 10000)) {
+            IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, index, new IntegrityCheckJobSummary());
+            CompletableFuture<IntegrityCheckJob> future = CompletableFuture.supplyAsync(() -> {
+                job.consume(topic);
+                return job;
+            }).thenApply(_job -> {
+                IntegrityCheckJobSummary.Summary summary = _job.getSummary();
+                LOG.info("Check integrity of topic {} completed successfully at position {}!", summary.topic, summary.checkedPositions);
+                lmdbEnvironment.close();
+                return _job;
+            }).exceptionally(throwable -> {
+                LOG.error("Ended exceptionally with error: {}", CommonUtils.captureStackTrace(throwable));
+                lmdbEnvironment.close();
+                if (throwable instanceof RuntimeException) {
+                    throw (RuntimeException) throwable;
+                } else if (throwable instanceof Error) {
+                    throw (Error) throwable;
+                } else {
+                    throw new RuntimeException(throwable);
+                }
+            });
+            jobs.put(topic, job);
+        }
     }
 
     public List<JobStatus> getJobs() {

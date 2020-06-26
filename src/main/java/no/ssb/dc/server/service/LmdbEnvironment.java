@@ -33,9 +33,13 @@ public class LmdbEnvironment implements AutoCloseable {
                 configuration.evaluateToInt("data.collector.integrityCheck.dbSizeInMb") : 50;
     }
 
-    public static void removePath(Path path) throws IOException {
-        if (path.toFile().exists())
-            Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+    public static void removePath(Path path) {
+        try {
+            if (path.toFile().exists())
+                Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Env<ByteBuffer> env() {

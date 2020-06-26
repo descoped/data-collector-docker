@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class IntegrityCheckJob {
@@ -104,11 +105,11 @@ public class IntegrityCheckJob {
         String reportId = ULIDGenerator.toUUID(ULIDGenerator.generate()).toString() + ".json";
 
         AtomicReference<IntegrityCheckIndex.SequenceKey> prevSequenceKey = new AtomicReference<>();
-        Map<String, Set<ULID.Value>> duplicatePositions = new LinkedHashMap<>();
+        Map<String, Set<ULID.Value>> duplicatePositionAndUlidSet = new LinkedHashMap<>();
+        Map<String, AtomicLong> duplicatePositionCounter = new LinkedHashMap<>();
 
         try (JsonArrayWriter writer = new JsonArrayWriter(reportPath, reportId, 5000)) {
             index.readSequence((sequenceKey, hasNext) -> {
-                LOG.trace("{} -- {}", sequenceKey.position, hasNext);
                 // mark first position
                 if (prevSequenceKey.get() == null) {
                     prevSequenceKey.set(sequenceKey);
@@ -118,19 +119,22 @@ public class IntegrityCheckJob {
                 // check if we hit a duplicate on stream
                 if (prevSequenceKey.get().position.equals(sequenceKey.position)) {
                     // make counters for position and increment duplicateCount
-                    duplicatePositions.computeIfAbsent(prevSequenceKey.get().position, duplicateUlidSet -> new TreeSet<>()).add(prevSequenceKey.get().ulid);
-                    duplicatePositions.get(sequenceKey.position).add(sequenceKey.ulid);
+                    duplicatePositionAndUlidSet.computeIfAbsent(prevSequenceKey.get().position, duplicateUlidSet -> new TreeSet<>()).add(prevSequenceKey.get().ulid);
+                    duplicatePositionAndUlidSet.get(sequenceKey.position).add(sequenceKey.ulid);
                 }
 
                 // if we got duplicates then write data
-                if (duplicatePositions.size() > 0 && (!prevSequenceKey.get().position.equals(sequenceKey.position) || !hasNext)) {
+                if (duplicatePositionAndUlidSet.size() > 0 && (!prevSequenceKey.get().position.equals(sequenceKey.position) || !hasNext)) {
                     ObjectNode positionNode = writer.parser().createObjectNode();
                     ArrayNode ulidArray = writer.parser().createArrayNode();
-                    Set<ULID.Value> ulidSet = duplicatePositions.get(prevSequenceKey.get().position);
-                    ulidSet.forEach(ulid -> ulidArray.add(ULIDGenerator.toUUID(ulid).toString()));
+                    Set<ULID.Value> ulidSet = duplicatePositionAndUlidSet.get(prevSequenceKey.get().position);
+                    ulidSet.forEach(ulid -> {
+                        ulidArray.add(ULIDGenerator.toUUID(ulid).toString());
+                    });
+                    duplicatePositionCounter.computeIfAbsent(prevSequenceKey.get().position, counter -> new AtomicLong()).set(ulidSet.size());
                     positionNode.set(prevSequenceKey.get().position, ulidArray);
                     writer.write(positionNode);
-                    duplicatePositions.clear();
+                    duplicatePositionAndUlidSet.clear();
                 }
 
                 // move marker to next
@@ -139,10 +143,12 @@ public class IntegrityCheckJob {
         }
 
         summary.setDuplicateReportId(reportId);
+        summary.setDuplicatePositionStats(duplicatePositionCounter);
     }
 
     public IntegrityCheckJobSummary.Summary getSummary() {
-        return summary.build();
+        IntegrityCheckJobSummary.Summary build = summary.build();
+        return build;
     }
 
 }

@@ -1,5 +1,6 @@
 package no.ssb.dc.server.service;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.huxhorn.sulky.ulid.ULID;
@@ -7,7 +8,6 @@ import no.ssb.dc.api.content.ContentStreamBuffer;
 import no.ssb.dc.api.health.HealthResourceUtils;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +27,8 @@ public class IntegrityCheckJobSummary {
     private final AtomicReference<String> currentPosition = new AtomicReference<>();
     private final AtomicLong positionCount = new AtomicLong();
     private final AtomicReference<String> duplicateReportId = new AtomicReference<>();
+    private final AtomicLong duplicatePositions = new AtomicLong();
+    private final AtomicLong affectedPositions = new AtomicLong();
     private final Map<String, AtomicLong> duplicatePositionCount = new LinkedHashMap<>();
 
     public IntegrityCheckJobSummary() {
@@ -74,13 +76,18 @@ public class IntegrityCheckJobSummary {
         return this;
     }
 
-    IntegrityCheckJobSummary updateDuplicatePositionCounters(ULID.Value ulid, String position) {
-        duplicatePositionCount.computeIfAbsent(position, counter -> new AtomicLong()).incrementAndGet();
+    public IntegrityCheckJobSummary setDuplicatePositionStats(Map<String, AtomicLong> duplicatePositionCounter) {
+        AtomicLong duplicatePositionCount = new AtomicLong(0);
+        duplicatePositionCounter.forEach((key, value) -> {
+            duplicatePositionCount.addAndGet(value.get());
+        });
+        duplicatePositions.set(duplicatePositionCount.get());
+        affectedPositions.set(duplicatePositionCounter.size());
         return this;
     }
 
     public Summary build() {
-        return new Summary(
+        Summary summary = new Summary(
                 topic.get(),
                 running.get(),
                 started.get(),
@@ -89,8 +96,11 @@ public class IntegrityCheckJobSummary {
                 lastPosition.get(),
                 currentPosition.get(),
                 positionCount.get(),
-                null
+                duplicatePositions.get(),
+                affectedPositions.get(),
+                duplicateReportId.get()
         );
+        return summary;
     }
 
     static class PositionInfo {
@@ -127,11 +137,13 @@ public class IntegrityCheckJobSummary {
         @JsonProperty public String lastPosition;
         @JsonProperty public String currentPosition;
         @JsonProperty public long checkedPositions;
-        @JsonProperty public List<PositionSummary> duplicates = new ArrayList<>();
+        @JsonProperty public long duplicatePositions;
+        @JsonProperty public long affectedPositions;
+        @JsonIgnore final String reportId;
 
         public Summary(String topic, boolean running, long started, long ended,
                        String firstPosition, String lastPosition, String currentPosition, long checkedPositions,
-                       Map<String, List<PositionInfo>> duplicatePositions) {
+                       long duplicatePositions, long affectedPositions, String reportId) {
             this.topic = topic;
             this.status = running ? "RUNNING" : "CLOSED";
             this.started = Instant.ofEpochMilli(started).toString();
@@ -141,16 +153,9 @@ public class IntegrityCheckJobSummary {
             this.lastPosition = lastPosition;
             this.currentPosition = currentPosition;
             this.checkedPositions = checkedPositions;
-//            for(Map.Entry<String, List<PositionInfo>> entry : duplicatePositions.entrySet()) {
-//                String position = entry.getKey();
-//                int count = entry.getValue().size();
-//                List<String> ulidList = new ArrayList<>();
-//                for (PositionInfo info : entry.getValue()) {
-//                    String s = ULIDGenerator.toUUID(info.ulid).toString();
-//                    ulidList.add(s);
-//                }
-//                duplicates.add(new PositionSummary(position, count, ulidList));
-//            }
+            this.duplicatePositions = duplicatePositions;
+            this.affectedPositions = affectedPositions;
+            this.reportId = reportId;
         }
     }
 
