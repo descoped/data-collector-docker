@@ -26,7 +26,7 @@ public class LmdbEnvironmentTest {
     private static final Logger LOG = LoggerFactory.getLogger(LmdbEnvironmentTest.class);
 
     @Test
-    void testSequence() throws IOException {
+    public void testSequence() throws IOException {
         Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
         removePath(dbPath);
 
