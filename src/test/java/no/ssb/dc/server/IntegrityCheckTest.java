@@ -17,6 +17,7 @@ import no.ssb.dc.server.service.LmdbEnvironment;
 import no.ssb.dc.test.client.ResponseHelper;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ public class IntegrityCheckTest {
         }
     }
 
+    @Disabled
     @Test
     void testIntegrityChecker() throws Exception {
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
@@ -81,6 +83,7 @@ public class IntegrityCheckTest {
         LOG.trace("summary: {}", json);
     }
 
+    @Disabled
     @Test
     void testIntegrityCheckerController() throws InterruptedException {
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
@@ -125,6 +128,7 @@ public class IntegrityCheckTest {
         server.stop();
     }
 
+    @Disabled
     @Test
     void writeJsonChunk() throws IOException {
         Path jsonExportPath = CommonUtils.currentPath().resolve("target").resolve("lmdb").resolve("export");
@@ -135,7 +139,6 @@ public class IntegrityCheckTest {
                 ObjectNode childNode = writer.parser().createObjectNode();
                 childNode.put("key", "value");
                 rootNode.set("field", childNode);
-                LOG.trace("{}", writer.parser().toPrettyJSON(rootNode));
                 writer.write(rootNode);
             }
             {

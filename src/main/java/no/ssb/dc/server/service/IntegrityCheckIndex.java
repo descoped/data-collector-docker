@@ -152,4 +152,8 @@ public class IntegrityCheckIndex implements AutoCloseable {
         }
     }
 
+    static class Writer {
+
+    }
+
 }
