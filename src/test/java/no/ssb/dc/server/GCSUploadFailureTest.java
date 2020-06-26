@@ -25,8 +25,6 @@ import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.controller.EventItem;
 import no.ssb.dc.test.server.TestServer;
 import no.ssb.service.provider.api.ProviderConfigurator;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -96,16 +94,14 @@ public class GCSUploadFailureTest {
 
     static TestServer server;
 
-    @Disabled
-    @BeforeAll
+//    @BeforeAll
     static void before() {
         server = TestServer.create(configuration);
         client = TestClient.create(server);
         server.start();
     }
 
-    @Disabled
-    @AfterAll
+//    @AfterAll
     static void after() {
         server.stop();
     }
