@@ -3,6 +3,7 @@ package no.ssb.dc.server.service;
 import de.huxhorn.sulky.ulid.ULID;
 import no.ssb.dc.api.ulid.ULIDGenerator;
 import no.ssb.dc.api.util.CommonUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ public class LmdbEnvironmentTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(LmdbEnvironmentTest.class);
 
+    @Disabled
     @Test
     public void testSequence() throws IOException {
         Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
