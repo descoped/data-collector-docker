@@ -29,6 +29,7 @@ module no.ssb.dc.server {
     requires undertow.core;
 
     requires lmdbjava;
+    requires org.objectweb.asm;
 
     opens no.ssb.dc.server;
     opens worker.config;
