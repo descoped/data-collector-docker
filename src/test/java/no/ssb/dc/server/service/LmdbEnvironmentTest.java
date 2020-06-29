@@ -51,7 +51,7 @@ public class LmdbEnvironmentTest {
                         index.writeSequence(ulid, String.valueOf(n));
                     }
                 }
-                index.commit();
+                index.commitQueue();
 
                 AtomicReference<IntegrityCheckIndex.SequenceKey> prevSequenceKey = new AtomicReference<>();
                 Map<String, Set<IntegrityCheckIndex.SequenceKey>> duplicateMap = new LinkedHashMap<>();

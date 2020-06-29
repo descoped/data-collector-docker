@@ -1,6 +1,7 @@
 package no.ssb.dc.server.service;
 
 import de.huxhorn.sulky.ulid.ULID;
+import no.ssb.dc.api.handler.Tuple;
 import org.lmdbjava.CursorIterable;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Txn;
@@ -11,7 +12,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.BiConsumer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -20,21 +22,20 @@ public class IntegrityCheckIndex implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(IntegrityCheckIndex.class);
 
+    static int BUFFER_POOL_SIZE = 500;
     static int CONTENT_LENGTH = 0;
 
     private final LmdbEnvironment lmdbEnvironment;
     private final DirectByteBufferPool keyBufferPool;
     private final DirectByteBufferPool contentBufferPool;
     private final Dbi<ByteBuffer> sequenceDb;
-    private final AtomicLong flushCounter = new AtomicLong();
-    private final int flushBufferCount;
-    private Txn<ByteBuffer> writeTransaction;
+    private final Queue<Tuple<ByteBuffer, ByteBuffer>> bufferQueue;
 
     public IntegrityCheckIndex(LmdbEnvironment lmdbEnvironment, int flushBufferCount) {
         this.lmdbEnvironment = lmdbEnvironment;
-        this.flushBufferCount = flushBufferCount;
-        this.keyBufferPool = new DirectByteBufferPool(10, lmdbEnvironment.maxKeySize());
-        this.contentBufferPool = new DirectByteBufferPool(10, CONTENT_LENGTH);
+        this.keyBufferPool = new DirectByteBufferPool(BUFFER_POOL_SIZE, lmdbEnvironment.maxKeySize());
+        this.contentBufferPool = new DirectByteBufferPool(BUFFER_POOL_SIZE, CONTENT_LENGTH);
+        this.bufferQueue = new LinkedBlockingDeque<>(BUFFER_POOL_SIZE - 1);
         this.sequenceDb = lmdbEnvironment.open();
     }
 
@@ -42,45 +43,33 @@ public class IntegrityCheckIndex implements AutoCloseable {
         return lmdbEnvironment.getDatabaseDir();
     }
 
-    Txn<ByteBuffer> getWriteTransaction() {
-        if (writeTransaction == null) {
-            writeTransaction = lmdbEnvironment.env().txnWrite();
-        }
-        if (flushCounter.incrementAndGet() == flushBufferCount) {
-            try {
-                writeTransaction.commit();
-            } catch (Txn.NotReadyException e) {
-                LOG.error("Transaction is NOT Ready! Ignoring commit");
+    public void commitQueue() {
+        try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnWrite()) {
+            Tuple<ByteBuffer, ByteBuffer> buffer;
+            while ((buffer = bufferQueue.poll()) != null) {
+                try {
+                    sequenceDb.put(txn, buffer.getKey(), buffer.getValue());
+                } finally {
+                    keyBufferPool.release(buffer.getKey());
+                    contentBufferPool.release(buffer.getValue());
+                }
             }
-            writeTransaction.close();
-            writeTransaction = lmdbEnvironment.env().txnWrite();
-            flushCounter.set(0);
-        }
-        return writeTransaction;
-    }
-
-    public void commit() {
-        if (flushCounter.get() > 0) {
-            flushCounter.set(flushBufferCount - 1L);
-            getWriteTransaction(); // enforce flush
+            txn.commit();
         }
     }
 
     void writeSequence(ULID.Value ulid, String position) {
         ByteBuffer keyBuffer = keyBufferPool.acquire();
-        try {
-            SequenceKey sequenceKey = new SequenceKey(ulid, position);
-            sequenceKey.toByteBuffer(keyBuffer);
-            ByteBuffer contentBuffer = contentBufferPool.acquire();
-            try {
-                contentBuffer.flip();
-                Txn<ByteBuffer> txn = getWriteTransaction();
-                sequenceDb.put(txn, keyBuffer, contentBuffer);
-            } finally {
-                contentBufferPool.release(contentBuffer);
+        SequenceKey sequenceKey = new SequenceKey(ulid, position);
+        sequenceKey.toByteBuffer(keyBuffer);
+        ByteBuffer contentBuffer = contentBufferPool.acquire();
+        contentBuffer.flip();
+        if (!bufferQueue.offer(new Tuple<>(keyBuffer, contentBuffer))) {
+            commitQueue();
+            // try to re-offer buffer after queue reach max capacity
+            if (!bufferQueue.offer(new Tuple<>(keyBuffer, contentBuffer))) {
+                throw new IllegalStateException("Buffers was not added to bufferQueue!");
             }
-        } finally {
-            keyBufferPool.release(keyBuffer);
         }
     }
 
@@ -98,10 +87,7 @@ public class IntegrityCheckIndex implements AutoCloseable {
 
     @Override
     public void close() {
-        commit();
-        if (writeTransaction != null) {
-            writeTransaction.close();
-        }
+        commitQueue();
     }
 
     static class SequenceKey implements Comparable<SequenceKey> {
@@ -114,6 +100,7 @@ public class IntegrityCheckIndex implements AutoCloseable {
         }
 
         static SequenceKey fromByteBuffer(ByteBuffer keyBuffer) {
+            Objects.requireNonNull(keyBuffer);
             int positionLength = keyBuffer.get();
             byte[] positionBytes = new byte[positionLength];
             keyBuffer.get(positionBytes);
@@ -125,6 +112,7 @@ public class IntegrityCheckIndex implements AutoCloseable {
         }
 
         ByteBuffer toByteBuffer(ByteBuffer allocatedBuffer) {
+            Objects.requireNonNull(allocatedBuffer);
             byte[] key = position.getBytes(UTF_8);
             allocatedBuffer.put((byte) key.length);
             allocatedBuffer.put(key);

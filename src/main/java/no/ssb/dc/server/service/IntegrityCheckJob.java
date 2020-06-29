@@ -82,7 +82,7 @@ public class IntegrityCheckJob {
                     summary.setLastPosition(peekBuffer.position());
                 }
 
-                index.commit();
+                index.commitQueue();
                 generateReport();
 
                 summary.setEnded();
