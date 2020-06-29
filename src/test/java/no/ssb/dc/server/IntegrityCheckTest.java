@@ -85,7 +85,7 @@ public class IntegrityCheckTest {
         LOG.trace("summary: {}", json);
     }
 
-//    @Disabled
+    @Disabled
     @Test
     void testIntegrityCheckerController() throws InterruptedException {
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
