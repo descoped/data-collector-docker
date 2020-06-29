@@ -97,8 +97,8 @@ public class TaskController implements Controller {
             return;
         }
         Deque<String> pathElements = new LinkedList<>(List.of(path));
-        String resourceName = pathElements.pollLast();
         String workerId = pathElements.pollLast();
+        String resourceName = pathElements.pollLast();
         boolean canceled = workerService.cancelTask(workerId);
         if (!canceled) {
             exchange.setStatusCode(400);
