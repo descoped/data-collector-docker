@@ -48,8 +48,8 @@ public class IntegrityCheckJob {
             ContentStreamBuffer peekBuffer = null;
             boolean test = true;
             int timeoutInSeconds = 15;
-            if (configuration.evaluateToString("data.collector.consumer.timeoutInSeconds") != null) {
-                timeoutInSeconds = configuration.evaluateToInt("data.collector.consumer.timeoutInSeconds");
+            if (configuration.evaluateToString("data.collector.integrityCheck.consumer.timeoutInSeconds") != null) {
+                timeoutInSeconds = configuration.evaluateToInt("data.collector.integrityCheck.consumer.timeoutInSeconds");
             }
             try {
                 LOG.info("Check integrity for topic: {}", topic);
@@ -88,8 +88,6 @@ public class IntegrityCheckJob {
                 summary.setEnded();
             }
 
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

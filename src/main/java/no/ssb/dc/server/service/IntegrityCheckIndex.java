@@ -57,9 +57,8 @@ public class IntegrityCheckIndex implements AutoCloseable {
 
     public void commit() {
         if (flushCounter.get() > 0) {
-            flushCounter.set(flushBufferCount - 1);
-            try (Txn<ByteBuffer> txn = getWriteTransaction()) {
-            }
+            flushCounter.set(flushBufferCount - 1L);
+            getWriteTransaction(); // enforce flush
         }
     }
 

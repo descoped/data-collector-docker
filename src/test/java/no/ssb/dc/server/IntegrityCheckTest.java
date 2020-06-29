@@ -59,7 +59,7 @@ public class IntegrityCheckTest {
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
                 .values("content.stream.connector", "rawdata")
                 .values("rawdata.client.provider", "memory")
-                .values("data.collector.consumer.timeoutInSeconds", "1")
+                .values("data.collector.integrityCheck.consumer.timeoutInSeconds", "1")
                 .values("data.collector.integrityCheck.dbSizeInMb", "100")
                 .build();
 
@@ -85,13 +85,13 @@ public class IntegrityCheckTest {
         LOG.trace("summary: {}", json);
     }
 
-    @Disabled
+//    @Disabled
     @Test
     void testIntegrityCheckerController() throws InterruptedException {
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
                 .values("content.stream.connector", "rawdata")
                 .values("rawdata.client.provider", "memory")
-                .values("data.collector.consumer.timeoutInSeconds", "1")
+                .values("data.collector.integrityCheck.consumer.timeoutInSeconds", "1")
                 .values("data.collector.integrityCheck.database.location", "")
                 .build();
 
