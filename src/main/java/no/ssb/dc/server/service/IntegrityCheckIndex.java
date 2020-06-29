@@ -99,6 +99,9 @@ public class IntegrityCheckIndex implements AutoCloseable {
     @Override
     public void close() {
         commit();
+        if (writeTransaction != null) {
+            writeTransaction.close();
+        }
     }
 
     static class SequenceKey implements Comparable<SequenceKey> {
