@@ -31,9 +31,11 @@ public class IntegrityCheckTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(IntegrityCheckJob.class);
 
+    static final int NUMBER_OF_MESSAGES = 25000;
+
     static void produceMessages(ContentStream contentStream, String prefixTopic) {
         try (ContentStreamProducer producer = contentStream.producer(prefixTopic+"test-stream")) {
-            for (int n = 0; n < 100; n++) {
+            for (int n = 0; n < NUMBER_OF_MESSAGES; n++) {
                 producer.publishBuilders(producer.builder().position(String.valueOf(n)).put("entry", "DATA".getBytes(StandardCharsets.UTF_8)));
 
                 if (n == 10 || n == 25 || n == 50) {
@@ -68,6 +70,7 @@ public class IntegrityCheckTest {
 
         Thread producerThread = new Thread(() -> produceMessages(contentStore.contentStream(), ""));
         producerThread.start();
+        producerThread.join();
 
         Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
         LmdbEnvironment.removePath(dbPath);
@@ -78,7 +81,8 @@ public class IntegrityCheckTest {
             job.consume("test-stream");
         }
 
-        producerThread.join();
+        LOG.trace("LastPos: {} -- CurrPos: {}", summary.getLastPosition(), summary.getCurrentPosition());
+
         contentStoreComponent.close();
 
         String json = JsonParser.createJsonParser().toPrettyJSON(summary.build());

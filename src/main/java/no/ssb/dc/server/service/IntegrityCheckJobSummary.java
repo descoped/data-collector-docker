@@ -58,9 +58,17 @@ public class IntegrityCheckJobSummary {
         return this;
     }
 
+    public String getLastPosition() {
+        return lastPosition.get();
+    }
+
     IntegrityCheckJobSummary setLastPosition(String position) {
         lastPosition.set(position);
         return this;
+    }
+
+    public String getCurrentPosition() {
+        return currentPosition.get();
     }
 
     IntegrityCheckJobSummary setCurrentPosition(String position) {

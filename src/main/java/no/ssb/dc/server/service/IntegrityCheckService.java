@@ -27,7 +27,6 @@ public class IntegrityCheckService implements Service {
     public IntegrityCheckService(DynamicConfiguration configuration, ContentStoreComponent contentStoreComponent) {
         this.configuration = configuration;
         this.contentStoreComponent = contentStoreComponent;
-
     }
 
     @Override

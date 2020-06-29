@@ -47,7 +47,11 @@ public class IntegrityCheckIndex implements AutoCloseable {
             writeTransaction = lmdbEnvironment.env().txnWrite();
         }
         if (flushCounter.incrementAndGet() == flushBufferCount) {
-            writeTransaction.commit();
+            try {
+                writeTransaction.commit();
+            } catch (Txn.NotReadyException e) {
+                LOG.error("Transaction is NOT Ready! Ignoring commit");
+            }
             writeTransaction.close();
             writeTransaction = lmdbEnvironment.env().txnWrite();
             flushCounter.set(0);
