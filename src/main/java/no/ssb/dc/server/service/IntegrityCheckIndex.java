@@ -47,7 +47,6 @@ public class IntegrityCheckIndex implements AutoCloseable {
         try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnWrite()) {
             Tuple<ByteBuffer, ByteBuffer> buffer;
             while ((buffer = bufferQueue.poll()) != null) {
-//                LOG.trace("Commit buffer: {}", buffer);
                 try {
                     sequenceDb.put(txn, buffer.getKey(), buffer.getValue());
                 } finally {
@@ -151,9 +150,4 @@ public class IntegrityCheckIndex implements AutoCloseable {
                     '}';
         }
     }
-
-    static class Writer {
-
-    }
-
 }
