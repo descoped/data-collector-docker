@@ -26,15 +26,17 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class IntegrityCheckTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(IntegrityCheckJob.class);
-
     static final int NUMBER_OF_MESSAGES = 25000;
+    private static final Logger LOG = LoggerFactory.getLogger(IntegrityCheckTest.class);
 
     static void produceMessages(ContentStream contentStream, String prefixTopic) {
-        try (ContentStreamProducer producer = contentStream.producer(prefixTopic+"test-stream")) {
+        try (ContentStreamProducer producer = contentStream.producer(prefixTopic + "test-stream")) {
             for (int n = 0; n < NUMBER_OF_MESSAGES; n++) {
                 producer.publishBuilders(producer.builder().position(String.valueOf(n)).put("entry", "DATA".getBytes(StandardCharsets.UTF_8)));
 
@@ -74,18 +76,35 @@ public class IntegrityCheckTest {
 
         Path dbPath = CommonUtils.currentPath().resolve("target").resolve("lmdb");
         LmdbEnvironment.removePath(dbPath);
-        LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbPath, "test-stream");
-        IntegrityCheckJobSummary summary = new IntegrityCheckJobSummary();
-        try (IntegrityCheckIndex index = new IntegrityCheckIndex(lmdbEnvironment, 50)) {
-            IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, index, summary);
-            job.consume("test-stream");
-        }
+        Map<String, IntegrityCheckJob> jobs = new LinkedHashMap<>();
+        CompletableFuture<IntegrityCheckJob> future = CompletableFuture.supplyAsync(() -> {
+            try (LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbPath, "test-stream")) {
+                try (IntegrityCheckIndex index = new IntegrityCheckIndex(lmdbEnvironment)) {
+                    IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, index, new IntegrityCheckJobSummary());
+                    jobs.put("test-stream", job);
+                    LOG.trace("Running jobs: {}", jobs);
+                    job.consume("test-stream");
+                    return job;
+                }
+            }
+        }).exceptionally(throwable -> {
+            LOG.error("Ended exceptionally with error: {}", CommonUtils.captureStackTrace(throwable));
+            if (throwable instanceof RuntimeException) {
+                throw (RuntimeException) throwable;
+            } else if (throwable instanceof Error) {
+                throw (Error) throwable;
+            } else {
+                throw new RuntimeException(throwable);
+            }
+        });
+        IntegrityCheckJob job = future.join();
 
-        LOG.trace("LastPos: {} -- CurrPos: {}", summary.getLastPosition(), summary.getCurrentPosition());
+        IntegrityCheckJobSummary.Summary summary = job.getSummary();
+        LOG.trace("LastPos: {} -- CurrPos: {}", summary.lastPosition, summary.currentPosition);
 
         contentStoreComponent.close();
 
-        String json = JsonParser.createJsonParser().toPrettyJSON(summary.build());
+        String json = JsonParser.createJsonParser().toPrettyJSON(summary);
         LOG.trace("summary: {}", json);
     }
 
@@ -96,7 +115,7 @@ public class IntegrityCheckTest {
                 .values("content.stream.connector", "rawdata")
                 .values("rawdata.client.provider", "memory")
                 .values("data.collector.integrityCheck.consumer.timeoutInSeconds", "1")
-                .values("data.collector.integrityCheck.database.location", "")
+                .values("data.collector.integrityCheck.database.location", "./target")
                 .build();
 
         TestServer server = TestServer.create(configuration);
@@ -121,7 +140,7 @@ public class IntegrityCheckTest {
         }
 
         {
-            while(true) {
+            while (true) {
                 ResponseHelper<String> response = client.get("/check-integrity/2020-test-stream");
                 JsonNode statusNode = JsonParser.createJsonParser().fromJson(response.body(), JsonNode.class).get("status");
                 if ("CLOSED".equals(statusNode.asText())) {
@@ -131,18 +150,18 @@ public class IntegrityCheckTest {
             }
         }
 
+        LOG.trace("Completed integrity check !!");
+
         {
             ResponseHelper<String> response = client.get("/check-integrity/2020-test-stream/full");
             LOG.trace("job-full-summary:\n{}", response.expect200Ok().body());
         }
 
-        // TODO add a test that produces enough messages to keep job running, so it can be canceled
-        /*
         {
+            client.put("/check-integrity/2020-test-stream").expect201Created();
             ResponseHelper<String> response = client.delete("/check-integrity/2020-test-stream");
-            LOG.trace("cancel-job: {}", response.expectAnyOf(400).body());
+            LOG.trace("cancel-job: {}", response.expectAnyOf(200).response().statusCode());
         }
-        */
 
         Thread.sleep(250);
 
@@ -169,5 +188,4 @@ public class IntegrityCheckTest {
             }
         }
     }
-
 }

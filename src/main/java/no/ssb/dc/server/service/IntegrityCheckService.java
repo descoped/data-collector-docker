@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class IntegrityCheckService implements Service {
@@ -66,37 +68,63 @@ public class IntegrityCheckService implements Service {
             return;
         }
 
-        Path dbLocation = configuration.evaluateToString("data.collector.integrityCheck.database.location") == null ||
-                configuration.evaluateToString("data.collector.integrityCheck.database.location").isEmpty() ?
-                CommonUtils.currentPath().resolve("target").resolve("lmdb") :
-                Paths.get(configuration.evaluateToString("data.collector.integrityCheck.database.location"));
+        String location = configuration.evaluateToString("data.collector.integrityCheck.database.location");
+        Path dbLocation = ((Supplier<Path>) () -> {
+            if (location == null || location.isEmpty()) {
+                // dev directory
+                return CommonUtils.currentPath().resolve("lmdb");
+            } else if (location.startsWith("./")) {
+                // relative path if starts with dot slash
+                return CommonUtils.currentPath().resolve(location.substring(2)).resolve("lmdb");
+            } else if (location.startsWith(".\\")) {
+                // relative path if starts with dot slash
+                return CommonUtils.currentPath().resolve(location.substring(2)).resolve("lmdb");
+            } else if (location.startsWith(".//")) {
+                // relative path if starts with dot slash
+                return CommonUtils.currentPath().resolve(location.substring(3)).resolve("lmdb");
+            } else if (location.startsWith(".")) {
+                // relative path if starts with dot
+                return CommonUtils.currentPath().resolve(location.substring(1)).resolve("lmdb");
+            } else {
+                // absolute path
+                return Paths.get(location);
+            }
+        }).get();
+        LOG.trace("Database path: {}", dbLocation);
+
         LmdbEnvironment.removePath(dbLocation);
 
-        LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbLocation, topic);
-        try (IntegrityCheckIndex index = new IntegrityCheckIndex(lmdbEnvironment, 10000)) {
-            IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, index, new IntegrityCheckJobSummary());
-            CompletableFuture<IntegrityCheckJob> future = CompletableFuture.supplyAsync(() -> {
-                job.consume(topic);
-                return job;
-            }).thenApply(_job -> {
-                IntegrityCheckJobSummary.Summary summary = _job.getSummary();
-                LOG.info("Check integrity of topic {} completed successfully at position {}!", summary.topic, summary.checkedPositions);
-                lmdbEnvironment.close();
-                return _job;
-            }).exceptionally(throwable -> {
-                LOG.error("Ended exceptionally with error: {}", CommonUtils.captureStackTrace(throwable));
-                if (!lmdbEnvironment.isClosed()) {
-                    lmdbEnvironment.close();
+        CompletableFuture<IntegrityCheckJob> future = CompletableFuture.supplyAsync(() -> {
+            try (LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbLocation, topic)) {
+                try (IntegrityCheckIndex index = new IntegrityCheckIndex(lmdbEnvironment)) {
+                    IntegrityCheckJobSummary summary = new IntegrityCheckJobSummary();
+                    IntegrityCheckJob job = new IntegrityCheckJob(configuration, contentStoreComponent, index, summary);
+                    jobs.put(topic, job);
+                    job.consume(topic);
+                    LOG.info("Check integrity of topic {} completed successfully at position {}!", topic, summary.getLastPosition());
+                    return job;
                 }
-                if (throwable instanceof RuntimeException) {
-                    throw (RuntimeException) throwable;
-                } else if (throwable instanceof Error) {
-                    throw (Error) throwable;
-                } else {
-                    throw new RuntimeException(throwable);
-                }
-            });
-            jobs.put(topic, job);
+            }
+        }).exceptionally(throwable -> {
+            LOG.error("Ended exceptionally with error: {}", CommonUtils.captureStackTrace(throwable));
+            if (throwable instanceof RuntimeException) {
+                throw (RuntimeException) throwable;
+            } else if (throwable instanceof Error) {
+                throw (Error) throwable;
+            } else {
+                throw new RuntimeException(throwable);
+            }
+        });
+
+        int failCount = 10;
+        while (jobs.get(topic) == null) {
+            try {
+                if (failCount == 0) break;
+                TimeUnit.MILLISECONDS.sleep(5);
+                failCount--;
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -132,4 +160,5 @@ public class IntegrityCheckService implements Service {
             this.status = status;
         }
     }
+
 }

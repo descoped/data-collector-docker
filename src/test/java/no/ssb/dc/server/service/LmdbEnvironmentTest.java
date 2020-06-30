@@ -33,7 +33,7 @@ public class LmdbEnvironmentTest {
         removePath(dbPath);
 
         try (LmdbEnvironment environment = new LmdbEnvironment(null, dbPath, "test-stream")) {
-            try (IntegrityCheckIndex index = new IntegrityCheckIndex(environment, 50)) {
+            try (IntegrityCheckIndex index = new IntegrityCheckIndex(environment)) {
 
                 for (int n = 1; n < 100; n++) {
                     {

@@ -3,12 +3,14 @@ package no.ssb.dc.server.service;
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 public class DirectByteBufferPool implements AutoCloseable {
 
-    final BlockingQueue<ByteBuffer> deque = new LinkedBlockingDeque<>();
+    final BlockingQueue<ByteBuffer> deque;
 
     public DirectByteBufferPool(int n, int capacity) {
+        deque = new LinkedBlockingDeque<>(n);
         for (int i = 0; i < n; i++) {
             try {
                 deque.put(ByteBuffer.allocateDirect(capacity));
@@ -20,7 +22,16 @@ public class DirectByteBufferPool implements AutoCloseable {
 
     public ByteBuffer acquire() {
         try {
-            return deque.take();
+            int failCount = 25;
+            ByteBuffer buffer;
+            while ((buffer = deque.poll(1, TimeUnit.SECONDS)) == null) {
+                if (failCount == 0) {
+                    throw new RuntimeException("Unable to acquire KeyBuffer!");
+                }
+                TimeUnit.MILLISECONDS.sleep(50);
+                failCount--;
+            }
+            return buffer;
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

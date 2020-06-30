@@ -26,6 +26,7 @@ module no.ssb.dc.server {
     requires io.github.classgraph;
     requires org.apache.tika.core;
 
+    requires java.net.http;
     requires undertow.core;
 
     requires lmdbjava;

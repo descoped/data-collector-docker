@@ -4,6 +4,8 @@ import no.ssb.config.DynamicConfiguration;
 import org.lmdbjava.Dbi;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +18,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.lmdbjava.DbiFlags.MDB_CREATE;
 
 public class LmdbEnvironment implements AutoCloseable {
+
+    private static final Logger LOG = LoggerFactory.getLogger(LmdbEnvironment.class);
 
     private final Path databaseDir;
     private final Env<ByteBuffer> env;
@@ -65,11 +69,14 @@ public class LmdbEnvironment implements AutoCloseable {
     }
 
     private Env<ByteBuffer> createEnvironment() {
+        int numberOfDbs = 3;
+        int dbSize = mapSize * 1024 * 1024;
+        LOG.info("Create Lmdb database with numberOfDbs: {}, size: {}", numberOfDbs, dbSize);
         return Env.create()
                 // LMDB also needs to know how large our DB might be. Over-estimating is OK.
-                .setMapSize(mapSize * 1024 * 1024)
+                .setMapSize(dbSize)
                 // LMDB also needs to know how many DBs (Dbi) we want to store in this Env.
-                .setMaxDbs(1)
+                .setMaxDbs(numberOfDbs)
                 // Now let's open the Env. The same path can be concurrently opened and
                 // used in different processes, but do not open the same path twice in
                 // the same process at the same time.
@@ -92,7 +99,7 @@ public class LmdbEnvironment implements AutoCloseable {
         }
     }
 
-    boolean isClosed() {
+    public boolean isClosed() {
         return closed.get();
     }
 

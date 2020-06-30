@@ -232,7 +232,7 @@ public class IntegrityCheckController implements Controller {
 
     // DELETE /check-integrity/TOPIC
     void cancelJob(HttpServerExchange exchange) {
-        Deque<String> pathElements = parseRequestPath(exchange, 2);
+        Deque<String> pathElements = parseRequestPath(exchange, 3);
         if (pathElements == null) return;
         String topic = pathElements.pollLast();
         if (!service.isJobRunning(topic)) {
@@ -240,5 +240,6 @@ public class IntegrityCheckController implements Controller {
             return;
         }
         service.cancelJob(topic);
+        exchange.setStatusCode(200);
     }
 }

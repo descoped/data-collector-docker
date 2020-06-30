@@ -31,7 +31,7 @@ public class IntegrityCheckIndex implements AutoCloseable {
     private final Dbi<ByteBuffer> sequenceDb;
     private final Queue<Tuple<ByteBuffer, ByteBuffer>> bufferQueue;
 
-    public IntegrityCheckIndex(LmdbEnvironment lmdbEnvironment, int flushBufferCount) {
+    public IntegrityCheckIndex(LmdbEnvironment lmdbEnvironment) {
         this.lmdbEnvironment = lmdbEnvironment;
         this.keyBufferPool = new DirectByteBufferPool(BUFFER_POOL_SIZE, lmdbEnvironment.maxKeySize());
         this.contentBufferPool = new DirectByteBufferPool(BUFFER_POOL_SIZE, CONTENT_LENGTH);
@@ -47,6 +47,7 @@ public class IntegrityCheckIndex implements AutoCloseable {
         try (Txn<ByteBuffer> txn = lmdbEnvironment.env().txnWrite()) {
             Tuple<ByteBuffer, ByteBuffer> buffer;
             while ((buffer = bufferQueue.poll()) != null) {
+//                LOG.trace("Commit buffer: {}", buffer);
                 try {
                     sequenceDb.put(txn, buffer.getKey(), buffer.getValue());
                 } finally {
