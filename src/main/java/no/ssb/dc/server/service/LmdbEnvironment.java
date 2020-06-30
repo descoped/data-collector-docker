@@ -92,6 +92,10 @@ public class LmdbEnvironment implements AutoCloseable {
         }
     }
 
+    boolean isClosed() {
+        return closed.get();
+    }
+
     @Override
     public void close() {
         // drop()

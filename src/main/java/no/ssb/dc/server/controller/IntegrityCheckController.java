@@ -95,7 +95,7 @@ public class IntegrityCheckController implements Controller {
         return new LinkedList<>(List.of(path));
     }
 
-    // PUT /integrity/TOPIC
+    // PUT /check-integrity/TOPIC
     void createJob(HttpServerExchange exchange) {
         Deque<String> pathElements = parseRequestPath(exchange, 3);
         if (pathElements == null) return;
@@ -109,7 +109,7 @@ public class IntegrityCheckController implements Controller {
         exchange.setStatusCode(201);
     }
 
-    // GET /integrity
+    // GET /check-integrity
     void getJobList(HttpServerExchange exchange) {
         List<IntegrityCheckService.JobStatus> runningJobs = service.getJobs();
 
@@ -121,7 +121,7 @@ public class IntegrityCheckController implements Controller {
         exchange.getResponseSender().send(responseBody);
     }
 
-    // GET /integrity/TOPIC
+    // GET /check-integrity/TOPIC
     void getJobSummary(HttpServerExchange exchange) {
         Deque<String> pathElements = parseRequestPath(exchange, 3);
         if (pathElements == null) return;
@@ -139,7 +139,7 @@ public class IntegrityCheckController implements Controller {
         exchange.getResponseSender().send(responseBody);
     }
 
-    // GET /integrity/TOPIC/full
+    // GET /check-integrity/TOPIC/full
     void getFullJobSummary(HttpServerExchange exchange) {
         Deque<String> pathElements = parseRequestPath(exchange, 4);
         if (pathElements == null) return;
@@ -149,57 +149,63 @@ public class IntegrityCheckController implements Controller {
             exchange.setStatusCode(400);
             return;
         }
+
+        /*
+         * The check-integrity job updates the summary metrics and is kept in memory (Service.jobs).
+         * The summary object contains a report-path and report-id that points a file containing duplicates (json-array).
+         */
+
         IntegrityCheckJobSummary.Summary summary = service.getJobSummary(topic);
         JsonParser jsonParser = JsonParser.createJsonParser();
-        String responseBody = jsonParser.toPrettyJSON(summary);
+        String jsonSummaryResponseBody = jsonParser.toPrettyJSON(summary);
 
         Path reportFilePath = summary.reportPath.resolve(summary.reportId);
         Path fullSummaryFilePath = summary.reportPath.resolve(topic + ".json");
 
-        boolean firstLine = false;
-        try (BufferedReader reader = new BufferedReader(new StringReader(responseBody))) {
-            try (FileWriter fileWriter = new FileWriter(fullSummaryFilePath.toFile(), true)) {
-                try (BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
-                    bufferedWriter.write("{");
-                    bufferedWriter.newLine();
-                    String line = reader.readLine();
-                    while (line != null) {
-                        if (!firstLine) {
-                            firstLine = true;
-                            line = reader.readLine();
+        boolean firstJsonSummaryLine = false;
+        try (BufferedReader jsonSummaryReader = new BufferedReader(new StringReader(jsonSummaryResponseBody))) {
+            try (FileWriter jsonSummaryFileWriter = new FileWriter(fullSummaryFilePath.toFile(), true)) {
+                try (BufferedWriter jsonSummaryBufferedWriter = new BufferedWriter(jsonSummaryFileWriter)) {
+                    jsonSummaryBufferedWriter.write("{");
+                    jsonSummaryBufferedWriter.newLine();
+                    String jsonSummaryLine = jsonSummaryReader.readLine();
+                    while (jsonSummaryLine != null) {
+                        if (!firstJsonSummaryLine) {
+                            firstJsonSummaryLine = true;
+                            jsonSummaryLine = jsonSummaryReader.readLine();
                             continue;
                         }
 
-                        if ("}".equals(line)) {
+                        if ("}".equals(jsonSummaryLine)) {
                             break;
                         }
 
-                        bufferedWriter.write(line);
-                        bufferedWriter.newLine();
+                        jsonSummaryBufferedWriter.write(jsonSummaryLine);
+                        jsonSummaryBufferedWriter.newLine();
 
-                        line = reader.readLine();
+                        jsonSummaryLine = jsonSummaryReader.readLine();
                     }
 
                     // write full summary
-                    bufferedWriter.write("  \"duplicates:\" ");
-                    try (BufferedReader reader2 = new BufferedReader(new FileReader(reportFilePath.toFile()))) {
-                        String line2 = reader2.readLine();
+                    jsonSummaryBufferedWriter.write(" ,\"duplicates\" : ");
+                    try (BufferedReader jsonReportReader = new BufferedReader(new FileReader(reportFilePath.toFile()))) {
+                        String jsonReportLine = jsonReportReader.readLine();
                         boolean skippedReportLine = false;
-                        while (line2 != null) {
+                        while (jsonReportLine != null) {
                             if (skippedReportLine) {
-                                bufferedWriter.write("    ");
+                                jsonSummaryBufferedWriter.write("    ");
                             }
                             if (!skippedReportLine) {
                                 skippedReportLine = true;
                             }
-                            bufferedWriter.write(line2);
-                            bufferedWriter.newLine();
-                            line2 = reader2.readLine();
+                            jsonSummaryBufferedWriter.write(jsonReportLine);
+                            jsonSummaryBufferedWriter.newLine();
+                            jsonReportLine = jsonReportReader.readLine();
                         }
                     }
 
-                    bufferedWriter.write("}");
-                    bufferedWriter.newLine();
+                    jsonSummaryBufferedWriter.write("}");
+                    jsonSummaryBufferedWriter.newLine();
                 }
             }
         } catch (IOException e) {
@@ -224,7 +230,7 @@ public class IntegrityCheckController implements Controller {
         exchange.endExchange();
     }
 
-    // DELETE /integrity/TOPIC
+    // DELETE /check-integrity/TOPIC
     void cancelJob(HttpServerExchange exchange) {
         Deque<String> pathElements = parseRequestPath(exchange, 2);
         if (pathElements == null) return;
@@ -234,6 +240,5 @@ public class IntegrityCheckController implements Controller {
             return;
         }
         service.cancelJob(topic);
-
     }
 }

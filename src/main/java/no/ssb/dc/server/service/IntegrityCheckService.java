@@ -85,7 +85,9 @@ public class IntegrityCheckService implements Service {
                 return _job;
             }).exceptionally(throwable -> {
                 LOG.error("Ended exceptionally with error: {}", CommonUtils.captureStackTrace(throwable));
-                lmdbEnvironment.close();
+                if (!lmdbEnvironment.isClosed()) {
+                    lmdbEnvironment.close();
+                }
                 if (throwable instanceof RuntimeException) {
                     throw (RuntimeException) throwable;
                 } else if (throwable instanceof Error) {

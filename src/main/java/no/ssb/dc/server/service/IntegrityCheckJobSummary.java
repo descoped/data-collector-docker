@@ -3,8 +3,6 @@ package no.ssb.dc.server.service;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import de.huxhorn.sulky.ulid.ULID;
-import no.ssb.dc.api.content.ContentStreamBuffer;
 import no.ssb.dc.api.health.HealthResourceUtils;
 
 import java.nio.file.Path;
@@ -12,7 +10,6 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -117,29 +114,6 @@ public class IntegrityCheckJobSummary {
                 duplicateReportId.get()
         );
         return summary;
-    }
-
-    static class PositionInfo {
-        final ULID.Value ulid;
-        final String position;
-
-        PositionInfo(ContentStreamBuffer buffer) {
-            ulid = buffer.ulid();
-            position = buffer.position();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            PositionInfo that = (PositionInfo) o;
-            return Objects.equals(position, that.position);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(position);
-        }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

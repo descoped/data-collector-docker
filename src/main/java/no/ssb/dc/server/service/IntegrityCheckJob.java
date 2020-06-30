@@ -101,6 +101,7 @@ public class IntegrityCheckJob {
     public void generateReport() {
         Path reportPath = index.getDatabaseDir().resolve("report");
         String reportId = ULIDGenerator.toUUID(ULIDGenerator.generate()).toString() + ".json";
+        LOG.info("Generating report to: {}/{}", reportPath, reportId);
 
         AtomicReference<IntegrityCheckIndex.SequenceKey> prevSequenceKey = new AtomicReference<>();
         Map<String, Set<ULID.Value>> duplicatePositionAndUlidSet = new LinkedHashMap<>();
@@ -143,6 +144,7 @@ public class IntegrityCheckJob {
         summary.setReportPath(reportPath);
         summary.setDuplicateReportId(reportId);
         summary.setDuplicatePositionStats(duplicatePositionCounter);
+        LOG.info("Done generating report");
     }
 
     public IntegrityCheckJobSummary.Summary getSummary() {

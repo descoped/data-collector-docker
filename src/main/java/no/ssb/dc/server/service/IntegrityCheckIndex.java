@@ -88,6 +88,8 @@ public class IntegrityCheckIndex implements AutoCloseable {
     @Override
     public void close() {
         commitQueue();
+        keyBufferPool.close();
+        contentBufferPool.close();
     }
 
     static class SequenceKey implements Comparable<SequenceKey> {
