@@ -21,13 +21,9 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static no.ssb.dc.server.service.SequenceDbHelper.getSequenceDatabaseLocation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RecoveryTest {
@@ -84,7 +80,7 @@ public class RecoveryTest {
         );
     }
 
-    @Disabled
+//    @Disabled
     @Test
     void readIndexAndConsumerSourceAndProduceTarget() throws InterruptedException {
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
@@ -124,54 +120,8 @@ public class RecoveryTest {
         Thread.sleep(1500);
         LOG.trace("Completed integrity check !!");
 
-        Path dbLocation = getSequenceDatabaseLocation(configuration);
-        PositionAndULIDVersion firstPosition;
-        PositionAndULIDVersion lastPosition;
-        try (LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbLocation, "source-test-stream")) {
-            SequenceDbHelper sequenceDbHelper = new SequenceDbHelper(lmdbEnvironment, lmdbEnvironment.open());
-            firstPosition = sequenceDbHelper.findFirstPosition();
-            lastPosition = sequenceDbHelper.findLastPosition();
-        }
-        LOG.trace("First: {} -- Last: {} => {}", firstPosition, lastPosition, new Date(lastPosition.ulid().timestamp()));
-
-        int publishAtCount = 1000;
-        AtomicInteger copyCounter = new AtomicInteger(0);
-        List<String> bufferedPositions = new ArrayList<>(publishAtCount);
-        try (ContentStreamProducer producer = recoveryContentStore.contentStream().producer("target-test-stream")) {
-            try (ContentStreamConsumer consumer = contentStore.contentStream().consumer("source-test-stream")) {
-                ContentStreamBuffer buffer;
-                while ((buffer = consumer.receive(1, TimeUnit.SECONDS)) != null) {
-                    ContentStreamBuffer.Builder producerBuilder = producer.builder();
-                    producerBuilder.ulid(buffer.ulid());
-                    producerBuilder.position(buffer.position());
-                    for (String key : buffer.keys()) {
-                        producerBuilder.put(key, buffer.get(key));
-                    }
-                    producer.produce(producerBuilder);
-                    bufferedPositions.add(buffer.position());
-
-                    if (copyCounter.incrementAndGet() == publishAtCount) {
-                        String[] publishPositions = bufferedPositions.toArray(new String[bufferedPositions.size()]);
-                        producer.publish(publishPositions);
-                        LOG.trace("Published: [{}]", String.join(", ", publishPositions));
-                        copyCounter.set(0);
-                        bufferedPositions.clear();
-                    }
-                    if (lastPosition.ulid().equals(buffer.ulid()) && lastPosition.position().equals(buffer.position())) {
-                        if (bufferedPositions.size() > 0) {
-                            String[] publishPositions = bufferedPositions.toArray(new String[bufferedPositions.size()]);
-                            producer.publish(publishPositions);
-                            LOG.trace("Published: [{}]", String.join(", ", publishPositions));
-                            copyCounter.set(0);
-                            bufferedPositions.clear();
-                        }
-                        break;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        RecoveryJob recoveryJob = new RecoveryJob(configuration, contentStoreComponent, recoveryContentStoreComponent);
+        recoveryJob.recover("source-test-stream", "target-test-stream");
 
         try (ContentStreamConsumer consumer = recoveryContentStore.contentStream().consumer("target-test-stream")) {
             ContentStreamBuffer buffer;
