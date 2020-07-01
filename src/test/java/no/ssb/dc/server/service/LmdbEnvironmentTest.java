@@ -53,27 +53,27 @@ public class LmdbEnvironmentTest {
                 }
                 index.commitQueue();
 
-                AtomicReference<IntegrityCheckIndex.SequenceKey> prevSequenceKey = new AtomicReference<>();
-                Map<String, Set<IntegrityCheckIndex.SequenceKey>> duplicateMap = new LinkedHashMap<>();
+                AtomicReference<SequenceKey> prevSequenceKey = new AtomicReference<>();
+                Map<String, Set<SequenceKey>> duplicateMap = new LinkedHashMap<>();
                 index.readSequence((sequenceKey,hasNext) -> {
                     if (prevSequenceKey.get() == null) {
                         prevSequenceKey.set(sequenceKey);
                         return;
                     }
-                    if (prevSequenceKey.get().position.equals(sequenceKey.position)) {
-                        duplicateMap.computeIfAbsent(prevSequenceKey.get().position, duplicateList -> new TreeSet<>()).add(prevSequenceKey.get());
-                        duplicateMap.get(sequenceKey.position).add(sequenceKey);
+                    if (prevSequenceKey.get().position().equals(sequenceKey.position())) {
+                        duplicateMap.computeIfAbsent(prevSequenceKey.get().position(), duplicateList -> new TreeSet<>()).add(prevSequenceKey.get());
+                        duplicateMap.get(sequenceKey.position()).add(sequenceKey);
                     }
                     prevSequenceKey.set(sequenceKey);
                 });
 
                 duplicateMap.forEach((sequenceKey, duplicateList) ->
                         LOG.trace("{}/{}", sequenceKey, duplicateList.stream().map(key ->
-                                Long.toString(key.ulid.timestamp() + key.ulid.getLeastSignificantBits())).collect(Collectors.joining(",")))
+                                Long.toString(key.ulid().timestamp() + key.ulid().getLeastSignificantBits())).collect(Collectors.joining(",")))
                 );
 
                 index.readSequence((sequenceKey,hasNext) -> {
-                    LOG.trace("{}/{}", sequenceKey.position, ULIDGenerator.toUUID(sequenceKey.ulid));
+                    LOG.trace("{}/{}", sequenceKey.position(), ULIDGenerator.toUUID(sequenceKey.ulid()));
                 });
             }
         }

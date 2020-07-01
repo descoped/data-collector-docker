@@ -103,7 +103,7 @@ public class IntegrityCheckJob {
         String reportId = ULIDGenerator.toUUID(ULIDGenerator.generate()).toString() + ".json";
         LOG.info("Generating report to: {}/{}", reportPath, reportId);
 
-        AtomicReference<IntegrityCheckIndex.SequenceKey> prevSequenceKey = new AtomicReference<>();
+        AtomicReference<SequenceKey> prevSequenceKey = new AtomicReference<>();
         Map<String, Set<ULID.Value>> duplicatePositionAndUlidSet = new LinkedHashMap<>();
         Map<String, AtomicLong> duplicatePositionCounter = new LinkedHashMap<>();
 
@@ -116,22 +116,22 @@ public class IntegrityCheckJob {
                 }
 
                 // check if we hit a duplicate on stream
-                if (prevSequenceKey.get().position.equals(sequenceKey.position)) {
+                if (prevSequenceKey.get().position().equals(sequenceKey.position())) {
                     // make counters for position and increment duplicateCount
-                    duplicatePositionAndUlidSet.computeIfAbsent(prevSequenceKey.get().position, duplicateUlidSet -> new TreeSet<>()).add(prevSequenceKey.get().ulid);
-                    duplicatePositionAndUlidSet.get(sequenceKey.position).add(sequenceKey.ulid);
+                    duplicatePositionAndUlidSet.computeIfAbsent(prevSequenceKey.get().position(), duplicateUlidSet -> new TreeSet<>()).add(prevSequenceKey.get().ulid());
+                    duplicatePositionAndUlidSet.get(sequenceKey.position()).add(sequenceKey.ulid());
                 }
 
                 // if we got duplicates then write data
-                if (duplicatePositionAndUlidSet.size() > 0 && (!prevSequenceKey.get().position.equals(sequenceKey.position) || !hasNext)) {
+                if (duplicatePositionAndUlidSet.size() > 0 && (!prevSequenceKey.get().position().equals(sequenceKey.position()) || !hasNext)) {
                     ObjectNode positionNode = writer.parser().createObjectNode();
                     ArrayNode ulidArray = writer.parser().createArrayNode();
-                    Set<ULID.Value> ulidSet = duplicatePositionAndUlidSet.get(prevSequenceKey.get().position);
+                    Set<ULID.Value> ulidSet = duplicatePositionAndUlidSet.get(prevSequenceKey.get().position());
                     ulidSet.forEach(ulid -> {
                         ulidArray.add(ULIDGenerator.toUUID(ulid).toString());
                     });
-                    duplicatePositionCounter.computeIfAbsent(prevSequenceKey.get().position, counter -> new AtomicLong()).set(ulidSet.size());
-                    positionNode.set(prevSequenceKey.get().position, ulidArray);
+                    duplicatePositionCounter.computeIfAbsent(prevSequenceKey.get().position(), counter -> new AtomicLong()).set(ulidSet.size());
+                    positionNode.set(prevSequenceKey.get().position(), ulidArray);
                     writer.write(positionNode);
                     duplicatePositionAndUlidSet.clear();
                 }

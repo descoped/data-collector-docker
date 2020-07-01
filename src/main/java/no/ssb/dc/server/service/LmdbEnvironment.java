@@ -83,7 +83,7 @@ public class LmdbEnvironment implements AutoCloseable {
                 .open(databaseDir.toFile());
     }
 
-    Dbi<ByteBuffer> open() {
+    public Dbi<ByteBuffer> open() {
         if (!closed.get() && db != null) {
             return db;
         }

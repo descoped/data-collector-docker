@@ -20,11 +20,12 @@ public class PrintUlidToDateTimeTest {
     @Disabled
     @Test
     void convertTimestamps() {
-        String[] ulidStrings = { "0172f3e1-115a-0000-0000-000000000004", "0173007e-f37c-0000-0000-000000000004" };
+        String[] ulidStrings = { "01726559-367d-0000-0000-000000000001", "01726566-4dd4-0000-0000-000000000001", "01726574-0a1f-0000-0000-000000000001" };
         for(String ulidString : ulidStrings) {
             UUID uuid = UUID.fromString(ulidString);
             ULID.Value ulid = new ULID.Value(uuid.getMostSignificantBits(), uuid.getLeastSignificantBits());
             LOG.info("{}", toDateTime(ulid));
         }
     }
+
 }
