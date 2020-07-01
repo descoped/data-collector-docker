@@ -19,7 +19,7 @@ public class IntegrityCheckIndex implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(IntegrityCheckIndex.class);
 
-    static int BUFFER_POOL_SIZE = 500;
+    static int BUFFER_POOL_SIZE = 1001;
     static int CONTENT_LENGTH = 0;
 
     private final LmdbEnvironment lmdbEnvironment;

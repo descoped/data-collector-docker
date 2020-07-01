@@ -9,14 +9,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static no.ssb.dc.server.service.SequenceDbHelper.getSequenceDatabaseLocation;
 
 public class IntegrityCheckService implements Service {
 
@@ -68,31 +68,10 @@ public class IntegrityCheckService implements Service {
             return;
         }
 
-        String location = configuration.evaluateToString("data.collector.integrityCheck.database.location");
-        Path dbLocation = ((Supplier<Path>) () -> {
-            if (location == null || location.isEmpty()) {
-                // dev directory
-                return CommonUtils.currentPath().resolve("lmdb");
-            } else if (location.startsWith("./")) {
-                // relative path if starts with dot slash
-                return CommonUtils.currentPath().resolve(location.substring(2)).resolve("lmdb");
-            } else if (location.startsWith(".\\")) {
-                // relative path if starts with dot slash
-                return CommonUtils.currentPath().resolve(location.substring(2)).resolve("lmdb");
-            } else if (location.startsWith(".//")) {
-                // relative path if starts with dot slash
-                return CommonUtils.currentPath().resolve(location.substring(3)).resolve("lmdb");
-            } else if (location.startsWith(".")) {
-                // relative path if starts with dot
-                return CommonUtils.currentPath().resolve(location.substring(1)).resolve("lmdb");
-            } else {
-                // absolute path
-                return Paths.get(location);
-            }
-        }).get();
+        Path dbLocation = getSequenceDatabaseLocation(configuration);
         LOG.trace("Database path: {}", dbLocation);
 
-        LmdbEnvironment.removePath(dbLocation);
+        LmdbEnvironment.removePath(dbLocation.resolve(topic));
 
         CompletableFuture<IntegrityCheckJob> future = CompletableFuture.supplyAsync(() -> {
             try (LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbLocation, topic)) {

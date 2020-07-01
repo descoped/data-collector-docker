@@ -1,6 +1,7 @@
 package no.ssb.dc.server.service;
 
 import de.huxhorn.sulky.ulid.ULID;
+import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.util.CommonUtils;
 import org.lmdbjava.CursorIterable;
 import org.lmdbjava.Dbi;
@@ -9,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -17,6 +20,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public class SequenceDbHelper {
 
@@ -28,6 +32,31 @@ public class SequenceDbHelper {
     public SequenceDbHelper(LmdbEnvironment lmdbEnvironment, Dbi<ByteBuffer> dbi) {
         this.lmdbEnvironment = lmdbEnvironment;
         this.dbi = dbi;
+    }
+
+    static Path getSequenceDatabaseLocation(DynamicConfiguration configuration) {
+        String location = configuration.evaluateToString("data.collector.integrityCheck.database.location");
+        return ((Supplier<Path>) () -> {
+            if (location == null || location.isEmpty()) {
+                // dev directory
+                return CommonUtils.currentPath().resolve("lmdb");
+            } else if (location.startsWith("./")) {
+                // relative path if starts with dot slash
+                return CommonUtils.currentPath().resolve(location.substring(2)).resolve("lmdb");
+            } else if (location.startsWith(".\\")) {
+                // relative path if starts with dot slash
+                return CommonUtils.currentPath().resolve(location.substring(2)).resolve("lmdb");
+            } else if (location.startsWith(".//")) {
+                // relative path if starts with dot slash
+                return CommonUtils.currentPath().resolve(location.substring(3)).resolve("lmdb");
+            } else if (location.startsWith(".")) {
+                // relative path if starts with dot
+                return CommonUtils.currentPath().resolve(location.substring(1)).resolve("lmdb");
+            } else {
+                // absolute path
+                return Paths.get(location);
+            }
+        }).get();
     }
 
     public PositionAndULIDVersion findFirstPosition() {
@@ -77,7 +106,7 @@ public class SequenceDbHelper {
                 if (duplicatePositionAndUlidSet.size() > 0 && !prevSequenceKey.get().position().equals(sequenceKey.position())) {
                     SortedSet<ULID.Value> ulidSet = duplicatePositionAndUlidSet.get(prevSequenceKey.get().position());
                     try {
-                        if (!visit.test(new DuplicateEvent(sequenceKey, ulidSet, it.hasNext()))) {
+                        if (!visit.test(new DuplicateEvent(prevSequenceKey.get(), ulidSet, it.hasNext()))) {
                             canceled.set(true);
                         }
                     } catch (Exception e) {
