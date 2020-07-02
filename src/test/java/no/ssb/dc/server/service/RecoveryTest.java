@@ -120,8 +120,8 @@ public class RecoveryTest {
         Thread.sleep(1500);
         LOG.trace("Completed integrity check !!");
 
-        RecoveryJob recoveryJob = new RecoveryJob(configuration, contentStoreComponent, recoveryContentStoreComponent);
-        recoveryJob.recover("source-test-stream", "target-test-stream");
+        RecoveryWorker recoveryWorker = new RecoveryWorker(configuration, contentStoreComponent, recoveryContentStoreComponent);
+        recoveryWorker.recover("source-test-stream", "target-test-stream");
 
         try (ContentStreamConsumer consumer = recoveryContentStore.contentStream().consumer("target-test-stream")) {
             ContentStreamBuffer buffer;

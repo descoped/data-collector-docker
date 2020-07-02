@@ -24,7 +24,7 @@ public class RecoveryService implements Service {
     private final DynamicConfiguration configuration;
     private final ContentStoreComponent contentStoreComponent;
     private final RecoveryContentStoreComponent recoveryContentStoreComponent;
-    final Map<String, RecoveryJob> jobs = new ConcurrentHashMap<>();
+    final Map<String, RecoveryWorker> jobs = new ConcurrentHashMap<>();
 
     public RecoveryService(DynamicConfiguration configuration, ContentStoreComponent contentStoreComponent, RecoveryContentStoreComponent recoveryContentStoreComponent) {
         this.configuration = configuration;
@@ -44,7 +44,7 @@ public class RecoveryService implements Service {
 
     @Override
     public void stop() {
-        for (Map.Entry<String, RecoveryJob> entry : jobs.entrySet()) {
+        for (Map.Entry<String, RecoveryWorker> entry : jobs.entrySet()) {
             //entry.getValue().terminate();
         }
     }

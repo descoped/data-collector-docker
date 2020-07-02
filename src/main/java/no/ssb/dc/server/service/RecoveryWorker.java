@@ -20,29 +20,36 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static no.ssb.dc.server.service.SequenceDbHelper.getSequenceDatabaseLocation;
 
-public class RecoveryJob {
+public class RecoveryWorker {
 
-    private static final Logger LOG = LoggerFactory.getLogger(RecoveryJob.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RecoveryWorker.class);
 
     private final DynamicConfiguration configuration;
     private final ContentStore contentStore;
     private final ContentStore recoveryContentStore;
+    private final RecoveryMonitor monitor = new RecoveryMonitor();
 
-    public RecoveryJob(DynamicConfiguration configuration,
-                       ContentStoreComponent contentStoreComponent,
-                       RecoveryContentStoreComponent recoveryContentStoreComponent) {
+    public RecoveryWorker(DynamicConfiguration configuration,
+                          ContentStoreComponent contentStoreComponent,
+                          RecoveryContentStoreComponent recoveryContentStoreComponent) {
         this.configuration = configuration;
         this.contentStore = contentStoreComponent.getDelegate();
         this.recoveryContentStore = recoveryContentStoreComponent.getDelegate();
     }
 
     public void recover(String sourceTopic, String targetTopic) {
+        monitor.setStarted();
         Path dbLocation = getSequenceDatabaseLocation(configuration);
+        monitor.setSourceDatabasePath(dbLocation);
+        monitor.setSourceTopic(sourceTopic);
+        monitor.setTargetTopic(targetTopic);
         try (LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbLocation, sourceTopic)) {
             Dbi<ByteBuffer> sequenceDb = lmdbEnvironment.open();
             SequenceDbHelper sequenceDbHelper = new SequenceDbHelper(lmdbEnvironment, sequenceDb);
             PositionAndULIDVersion firstPosition = sequenceDbHelper.findFirstPosition();
+            monitor.setStartPosition(firstPosition.position());
             PositionAndULIDVersion lastPosition = sequenceDbHelper.findLastPosition();
+            monitor.setLastPosition(lastPosition.position());
 
             int publishAtCount = 1000;
             AtomicInteger bufferCounter = new AtomicInteger(0);
@@ -52,6 +59,7 @@ public class RecoveryJob {
                     ContentStreamBuffer buffer;
                     while ((buffer = consumer.receive(15, TimeUnit.SECONDS)) != null) {
                         ContentStreamBuffer.Builder producerBuilder = producer.builder();
+                        monitor.setCurrentPosition(buffer.position());
                         producerBuilder.ulid(buffer.ulid());
                         producerBuilder.position(buffer.position());
                         for (String key : buffer.keys()) {
@@ -59,6 +67,7 @@ public class RecoveryJob {
                         }
                         producer.produce(producerBuilder);
                         bufferedPositions.add(buffer.position());
+                        monitor.incrementBufferedPositions();
 
                         if (bufferCounter.incrementAndGet() == publishAtCount) {
                             publishBuffers(bufferCounter, bufferedPositions, producer);
@@ -80,8 +89,14 @@ public class RecoveryJob {
     private void publishBuffers(AtomicInteger bufferCounter, List<String> bufferedPositions, ContentStreamProducer producer) {
         String[] publishPositions = bufferedPositions.toArray(new String[bufferedPositions.size()]);
         producer.publish(publishPositions);
+        monitor.incrementCopiedPositions(publishPositions.length);
         //LOG.trace("Published: [{}]", String.join(", ", publishPositions));
         bufferCounter.set(0);
         bufferedPositions.clear();
+        monitor.resetBufferedPositions();
+    }
+
+    public RecoveryMonitor.Summary summary() {
+        return monitor.build();
     }
 }
