@@ -25,10 +25,14 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Date;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+/**
+ * Test requires vm arg: --add-opens java.base/java.nio=lmdbjava --add-exports=java.base/sun.nio.ch=lmdbjava
+ */
 public class RecoveryTest {
 
     static final int NUMBER_OF_MESSAGES = 25000;
@@ -36,13 +40,13 @@ public class RecoveryTest {
 
     static void produceMessages(ContentStream contentStream, String prefixTopic) {
         try (ContentStreamProducer producer = contentStream.producer(prefixTopic + "test-stream")) {
-            int min = 20000;
-            int max = 25000 - 1;
+            int min = (int) Math.round(NUMBER_OF_MESSAGES * 0.75);
+            int max = NUMBER_OF_MESSAGES - 1;
             for (int n = 0; n < NUMBER_OF_MESSAGES; n++) {
                 producer.publishBuilders(producer.builder().position(String.valueOf(n)).put("entry", "DATA".getBytes(StandardCharsets.UTF_8)));
 
                 if (n >= min) {
-                    int randomPosition = (int) (Math.random() * (max - min + 1) + min);
+                    int randomPosition = (int) (Math.random() * (max - n + 1) + n);
                     producer.publishBuilders(producer.builder().position(String.valueOf(randomPosition)).put("entry", "DATA".getBytes(StandardCharsets.UTF_8)));
                 }
             }
@@ -83,6 +87,7 @@ public class RecoveryTest {
         );
     }
 
+    @Disabled
     @Test
     public void testController() throws InterruptedException {
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
@@ -97,12 +102,58 @@ public class RecoveryTest {
         TestClient client = TestClient.create(server);
         server.start();
 
+        ContentStoreComponent contentStoreComponent = server.getApplication().unwrap(ContentStoreComponent.class);
+        ContentStore contentStore = contentStoreComponent.getDelegate();
+
+        Thread producerThread = new Thread(() -> produceMessages(contentStore.contentStream(), "source-"));
+        producerThread.start();
+        producerThread.join();
+
+        IntegrityCheckService integrityCheckService = server.getApplication().unwrap(IntegrityCheckService.class);
+        integrityCheckService.createJob("source-test-stream");
+        while (integrityCheckService.isJobRunning("source-test-stream")) {
+            Thread.sleep(50);
+        }
+        Thread.sleep(1500);
+        LOG.trace("Completed integrity check !!");
+
         {
-            ResponseHelper<String> responseHelper = client.get("/recovery/test-stream");
-            responseHelper.expect404NotFound();
+            ResponseHelper<String> responseHelper = client.put("/recovery/source-test-stream?toTopic=target-test-stream");
+            responseHelper.expect201Created();
         }
 
-        //Thread.sleep(1000);
+        {
+            ResponseHelper<String> responseHelper = client.get("/recovery");
+            responseHelper.expect200Ok();
+            LOG.trace("workers: {}", responseHelper.body());
+        }
+
+        {
+            ResponseHelper<String> responseHelper = client.get("/recovery/source-test-stream");
+            responseHelper.expect200Ok();
+            LOG.trace("summary: {}", responseHelper.body());
+        }
+
+        RecoveryService recoveryService = server.getApplication().unwrap(RecoveryService.class);
+        CompletableFuture<RecoveryWorker> future = recoveryService.jobFutures.get("source-test-stream");
+        future.join();
+
+        {
+            ResponseHelper<String> responseHelper = client.get("/recovery/source-test-stream");
+            responseHelper.expect200Ok();
+            LOG.trace("summary: {}", responseHelper.body());
+        }
+
+        {
+            recoveryService.jobFutures.clear();
+            recoveryService.jobs.clear();
+            ResponseHelper<String> responseHelper = client.put("/recovery/source-test-stream?toTopic=target-test-stream");
+            responseHelper.expect201Created();
+            client.delete("/recovery/source-test-stream").expect200Ok();
+        }
+
+        LOG.trace("Shutdown test");
+        Thread.sleep(500);
         server.stop();
     }
 

@@ -1,8 +1,12 @@
 package no.ssb.dc.server.recovery;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import no.ssb.dc.api.health.HealthResourceUtils;
 
+import java.math.RoundingMode;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,8 +22,8 @@ public class RecoveryMonitor {
     final AtomicReference<Path> sourceDatabasePath = new AtomicReference<>();
     final AtomicReference<String> sourceTopic = new AtomicReference<>();
     final AtomicReference<String> targetTopic = new AtomicReference<>();
-    final AtomicLong bufferedPositions = new AtomicLong();
-    final AtomicLong copiedPositions = new AtomicLong();
+    final AtomicLong bufferedPositions = new AtomicLong(0);
+    final AtomicLong copiedPositions = new AtomicLong(0);
 
     void setStarted() {
         started.set(System.currentTimeMillis());
@@ -85,9 +89,10 @@ public class RecoveryMonitor {
 
     public static class Summary {
 
-        @JsonProperty public final boolean running;
-        @JsonProperty public final long started;
-        @JsonProperty public final long ended;
+        @JsonProperty public final String status;
+        @JsonProperty public final String started;
+        @JsonProperty public final String ended;
+        @JsonProperty public String since;
         @JsonProperty public final String startPosition;
         @JsonProperty public final String currentPosition;
         @JsonProperty public final String lastPosition;
@@ -96,6 +101,7 @@ public class RecoveryMonitor {
         @JsonProperty public final String targetTopic;
         @JsonProperty public final long bufferedPositions;
         @JsonProperty public final long copiedPositions;
+        @JsonProperty public final float averageCopiedPositionsPerSecond;
 
         public Summary(boolean running,
                        long started,
@@ -108,9 +114,11 @@ public class RecoveryMonitor {
                        String targetTopic,
                        long bufferedPositions,
                        long copiedPositions) {
-            this.running = running;
-            this.started = started;
-            this.ended = ended;
+
+            this.status = running ? "RUNNING" : "COMPLETED";
+            this.started = Instant.ofEpochMilli(started).toString();
+            this.ended = Instant.ofEpochMilli(ended).toString();
+            this.since = HealthResourceUtils.durationAsString(started);
             this.startPosition = startPosition;
             this.currentPosition = currentPosition;
             this.lastPosition = lastPosition;
@@ -119,6 +127,12 @@ public class RecoveryMonitor {
             this.targetTopic = targetTopic;
             this.bufferedPositions = bufferedPositions;
             this.copiedPositions = copiedPositions;
+
+            long now = System.currentTimeMillis();
+            Float averageRequestPerSecond = HealthResourceUtils.divide(copiedPositions, (now - started) / 1000);
+            DecimalFormat df = new DecimalFormat("#.##");
+            df.setRoundingMode(RoundingMode.CEILING);
+            this.averageCopiedPositionsPerSecond = averageRequestPerSecond; // Float.parseFloat(df.format(averageRequestPerSecond));
         }
     }
 }

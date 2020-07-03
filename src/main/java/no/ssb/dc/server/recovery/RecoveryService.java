@@ -1,6 +1,7 @@
 package no.ssb.dc.server.recovery;
 
 import no.ssb.config.DynamicConfiguration;
+import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.spi.Service;
 import no.ssb.dc.server.content.ContentStoreComponent;
 import org.slf4j.Logger;
@@ -50,7 +51,7 @@ public class RecoveryService implements Service {
     @Override
     public void stop() {
         for (Map.Entry<String, RecoveryWorker> entry : jobs.entrySet()) {
-            //entry.getValue().terminate();
+            entry.getValue().terminate();
         }
     }
 
@@ -61,5 +62,31 @@ public class RecoveryService implements Service {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    void createRecoveryWorker(String fromTopic, String toTopic) {
+        Path dbLocation = getSequenceDatabaseLocation(configuration);
+        LOG.trace("Database path: {}", dbLocation);
+        if (!dbLocation.toFile().exists()) {
+            throw new RuntimeException("Lmdb Location does not exist: " + dbLocation.toString());
+        }
+
+        CompletableFuture<RecoveryWorker> workerFuture = CompletableFuture.supplyAsync(() -> {
+            RecoveryWorker recoveryWorker = new RecoveryWorker(configuration, contentStoreComponent, recoveryContentStoreComponent);
+            jobs.put(fromTopic, recoveryWorker);
+            recoveryWorker.recover(fromTopic, toTopic);
+            LOG.trace("Completed Recovery!");
+            return recoveryWorker;
+        }).exceptionally(throwable -> {
+            LOG.error("Ended exceptionally with error: {}", CommonUtils.captureStackTrace(throwable));
+            if (throwable instanceof RuntimeException) {
+                throw (RuntimeException) throwable;
+            } else if (throwable instanceof Error) {
+                throw (Error) throwable;
+            } else {
+                throw new RuntimeException(throwable);
+            }
+        });
+        jobFutures.put(fromTopic, workerFuture);
     }
 }

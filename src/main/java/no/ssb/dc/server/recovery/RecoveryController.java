@@ -1,16 +1,21 @@
 package no.ssb.dc.server.recovery;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
 import no.ssb.dc.api.http.HttpStatus;
 import no.ssb.dc.api.http.Request;
 import no.ssb.dc.api.util.CommonUtils;
+import no.ssb.dc.api.util.JsonParser;
 import no.ssb.dc.application.controller.PathDispatcher;
 import no.ssb.dc.application.controller.PathHandler;
 import no.ssb.dc.application.spi.Controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static no.ssb.dc.api.http.Request.Method.DELETE;
 import static no.ssb.dc.api.http.Request.Method.GET;
@@ -56,7 +61,9 @@ public class RecoveryController implements Controller {
                     Request.Method.valueOf(exchange.getRequestMethod().toString().toUpperCase()),
                     exchange);
 
-            exchange.setStatusCode(handler.statusCode().code());
+            if (!exchange.isComplete()) {
+                exchange.setStatusCode(handler.statusCode().code());
+            }
 
         } catch (Exception e) {
             LOG.error("Request error: {}", CommonUtils.captureStackTrace(e));
@@ -64,21 +71,71 @@ public class RecoveryController implements Controller {
         }
     }
 
+    boolean isRunning(String topic) {
+        CompletableFuture<RecoveryWorker> future = service.jobFutures.get(topic);
+        RecoveryWorker worker = service.jobs.get(topic);
+        if (worker == null && future != null && !future.isDone()) {
+            try {
+                int failCount = 10;
+                while (failCount > 0 && (worker = service.jobs.get(topic)) == null) {
+                    Thread.sleep(10);
+                    failCount--;
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (worker == null) {
+            return false;
+        }
+        return worker.monitor().running.get();
+    }
+
+    // PUT /recovery/{topic}?toTopic=TARGET_TOPIC
     private HttpStatus createWorker(PathHandler handler) {
-
-        return HttpStatus.HTTP_NOT_FOUND;
+        String fromTopic = handler.parameters().get("topic");
+        if (isRunning(fromTopic)) {
+            return HttpStatus.HTTP_CONFLICT;
+        }
+        if (!handler.exchange().getQueryParameters().containsKey("toTopic")) {
+            return HttpStatus.HTTP_BAD_REQUEST;
+        }
+        String toTopic = handler.exchange().getQueryParameters().get("toTopic").getFirst();
+        service.createRecoveryWorker(fromTopic, toTopic);
+        return HttpStatus.HTTP_CREATED;
     }
 
+    // GET /recovery
     private HttpStatus getWorkerList(PathHandler handler) {
-        return HttpStatus.HTTP_NOT_FOUND;
+        List<String> list = service.getSequenceDatabaseList().stream().map(path -> path.getFileName().toString()).collect(Collectors.toList());
+        String indexListJson = JsonParser.createJsonParser().toPrettyJSON(list);
+        handler.exchange().getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+        handler.exchange().getResponseSender().send(indexListJson);
+        return HttpStatus.HTTP_OK;
     }
 
+    // GET /recovery/{topic}
     private HttpStatus getWorkerSummary(PathHandler handler) {
-        return HttpStatus.HTTP_NOT_FOUND;
+        String fromTopic = handler.parameters().get("topic");
+        RecoveryWorker recoveryWorker = service.jobs.get(fromTopic);
+        if (recoveryWorker == null) {
+            return HttpStatus.HTTP_BAD_REQUEST;
+        }
+        RecoveryMonitor.Summary summary = recoveryWorker.summary();
+        String summaryJson = JsonParser.createJsonParser().toPrettyJSON(summary);
+        handler.exchange().getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
+        handler.exchange().getResponseSender().send(summaryJson);
+        return HttpStatus.HTTP_OK;
     }
 
+    // DELETE /recovery/{topic}
     private HttpStatus cancelWorker(PathHandler handler) {
-        return HttpStatus.HTTP_NOT_FOUND;
+        String fromTopic = handler.parameters().get("topic");
+        if (!isRunning(fromTopic)) {
+            return HttpStatus.HTTP_NOT_FOUND;
+        }
+        RecoveryWorker recoveryWorker = service.jobs.get(fromTopic);
+        recoveryWorker.terminate();
+        return HttpStatus.HTTP_OK;
     }
-
 }
