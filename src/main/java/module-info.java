@@ -36,9 +36,9 @@ module no.ssb.dc.server {
     opens worker.config;
 
     opens no.ssb.dc.server.content to com.fasterxml.jackson.databind, org.apache.tika.core;
+    opens no.ssb.dc.server.task to com.fasterxml.jackson.databind;
     opens no.ssb.dc.server.integrity to com.fasterxml.jackson.databind;
     opens no.ssb.dc.server.recovery to com.fasterxml.jackson.databind;
-    opens no.ssb.dc.server.task to com.fasterxml.jackson.databind;
 
     exports no.ssb.dc.server;
     exports no.ssb.dc.server.content;

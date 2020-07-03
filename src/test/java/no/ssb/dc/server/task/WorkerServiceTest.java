@@ -8,6 +8,7 @@ import no.ssb.dc.server.content.ContentStoreComponent;
 import no.ssb.dc.test.client.TestClient;
 import no.ssb.dc.test.server.TestServer;
 import no.ssb.dc.test.server.TestServerExtension;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -77,6 +78,7 @@ public class WorkerServiceTest {
     @Inject
     TestServer testServer;
 
+    @Disabled
     @Test
     public void testWorkerService() throws InterruptedException {
         WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create(),
@@ -93,6 +95,7 @@ public class WorkerServiceTest {
         assertTrue(workerService.list().isEmpty(), "Task list should be empty!");
     }
 
+    @Disabled
     @Test
     public void testWorkerServiceWithFailAt() throws InterruptedException {
         WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create(),
@@ -108,11 +111,13 @@ public class WorkerServiceTest {
         }
     }
 
+    @Disabled
     @Test
     public void testServiceAlive() {
         client.get("/health/alive").expect200Ok();
     }
 
+    @Disabled
     @Test
     public void testServiceReady() {
         client.get("/health/ready").expect200Ok();
