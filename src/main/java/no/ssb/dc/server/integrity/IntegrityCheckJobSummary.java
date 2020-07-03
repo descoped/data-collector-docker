@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import no.ssb.dc.api.health.HealthResourceUtils;
 
+import java.math.RoundingMode;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -127,6 +129,7 @@ public class IntegrityCheckJobSummary {
         @JsonProperty public String lastPosition;
         @JsonProperty public String currentPosition;
         @JsonProperty public long checkedPositions;
+        @JsonProperty public float averageCheckedPositionsPerSecond;
         @JsonProperty public long duplicatePositions;
         @JsonProperty public long affectedPositions;
         @JsonIgnore public final Path reportPath;
@@ -148,6 +151,12 @@ public class IntegrityCheckJobSummary {
             this.affectedPositions = affectedPositions;
             this.reportPath = reportPath;
             this.reportId = reportId;
+
+            long now = System.currentTimeMillis();
+            Float averageRequestPerSecond = HealthResourceUtils.divide(checkedPositions, (now - started) / 1000);
+            DecimalFormat df = new DecimalFormat("#.##");
+            df.setRoundingMode(RoundingMode.UP);
+            this.averageCheckedPositionsPerSecond = Float.parseFloat(df.format(averageRequestPerSecond));
         }
     }
 

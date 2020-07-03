@@ -131,8 +131,8 @@ public class RecoveryMonitor {
             long now = System.currentTimeMillis();
             Float averageRequestPerSecond = HealthResourceUtils.divide(copiedPositions, (now - started) / 1000);
             DecimalFormat df = new DecimalFormat("#.##");
-            df.setRoundingMode(RoundingMode.CEILING);
-            this.averageCopiedPositionsPerSecond = averageRequestPerSecond; // Float.parseFloat(df.format(averageRequestPerSecond));
+            df.setRoundingMode(RoundingMode.UP);
+            this.averageCopiedPositionsPerSecond = Float.parseFloat(df.format(averageRequestPerSecond));
         }
     }
 }
