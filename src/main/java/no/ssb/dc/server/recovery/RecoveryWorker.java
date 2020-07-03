@@ -45,7 +45,7 @@ public class RecoveryWorker {
         LOG.info("Copy from {} to {}", sourceTopic, targetTopic);
         monitor.setStarted();
         Path dbLocation = getSequenceDatabaseLocation(configuration);
-        monitor.setSourceDatabasePath(dbLocation);
+        monitor.setSourceDatabasePath(dbLocation.resolve(sourceTopic));
         monitor.setSourceTopic(sourceTopic);
         monitor.setTargetTopic(targetTopic);
         try (LmdbEnvironment lmdbEnvironment = new LmdbEnvironment(configuration, dbLocation, sourceTopic)) {

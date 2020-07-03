@@ -96,7 +96,7 @@ public class RecoveryMonitor {
         @JsonProperty public final String startPosition;
         @JsonProperty public final String currentPosition;
         @JsonProperty public final String lastPosition;
-        @JsonProperty public final Path sourceDatabasePath;
+        @JsonProperty public final Path indexDatabasePath;
         @JsonProperty public final String sourceTopic;
         @JsonProperty public final String targetTopic;
         @JsonProperty public final long bufferedPositions;
@@ -122,7 +122,7 @@ public class RecoveryMonitor {
             this.startPosition = startPosition;
             this.currentPosition = currentPosition;
             this.lastPosition = lastPosition;
-            this.sourceDatabasePath = sourceDatabasePath;
+            this.indexDatabasePath = sourceDatabasePath;
             this.sourceTopic = sourceTopic;
             this.targetTopic = targetTopic;
             this.bufferedPositions = bufferedPositions;
