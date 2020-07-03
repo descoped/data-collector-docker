@@ -35,11 +35,15 @@ module no.ssb.dc.server {
     opens no.ssb.dc.server;
     opens worker.config;
 
-    opens no.ssb.dc.server.service to com.fasterxml.jackson.databind, org.apache.tika.core;
-    opens no.ssb.dc.server.controller to com.fasterxml.jackson.databind;
+    opens no.ssb.dc.server.content to com.fasterxml.jackson.databind, org.apache.tika.core;
+    opens no.ssb.dc.server.integrity to com.fasterxml.jackson.databind;
+    opens no.ssb.dc.server.recovery to com.fasterxml.jackson.databind;
+    opens no.ssb.dc.server.task to com.fasterxml.jackson.databind;
 
     exports no.ssb.dc.server;
-    exports no.ssb.dc.server.component;
-    exports no.ssb.dc.server.service;
-    exports no.ssb.dc.server.controller;
+    exports no.ssb.dc.server.content;
+    exports no.ssb.dc.server.db;
+    exports no.ssb.dc.server.integrity;
+    exports no.ssb.dc.server.recovery;
+    exports no.ssb.dc.server.task;
 }

@@ -1,2 +1,3 @@
-no.ssb.dc.server.controller.TaskController
-no.ssb.dc.server.controller.IntegrityCheckController
+no.ssb.dc.server.task.TaskController
+no.ssb.dc.server.integrity.IntegrityCheckController
+no.ssb.dc.server.recovery.RecoveryController

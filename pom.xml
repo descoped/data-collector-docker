@@ -415,7 +415,7 @@
                         --illegal-access=deny
                         --add-opens=java.base/java.nio=lmdbjava
                         --add-exports=java.base/sun.nio.ch=lmdbjava
-                        --add-opens=no.ssb.dc.server/no.ssb.dc.server.service=ALL-UNNAMED
+                        --add-opens=no.ssb.dc.server/no.ssb.dc.server.task=ALL-UNNAMED
                         --add-reads no.ssb.dc.content.rawdata=no.ssb.dc.core
                         --add-exports no.ssb.rawdata.postgres/no.ssb.rawdata.provider.postgres=no.ssb.service.provider.api,no.ssb.dc.server
                         -Xmx1500m
