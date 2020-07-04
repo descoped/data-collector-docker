@@ -5,14 +5,18 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import de.huxhorn.sulky.ulid.ULID;
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.content.ContentStore;
+import no.ssb.dc.api.content.ContentStream;
 import no.ssb.dc.api.content.ContentStreamBuffer;
 import no.ssb.dc.api.content.ContentStreamConsumer;
 import no.ssb.dc.api.ulid.ULIDGenerator;
+import no.ssb.dc.api.util.JsonParser;
 import no.ssb.dc.server.content.ContentStoreComponent;
 import no.ssb.dc.server.db.SequenceKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -44,7 +48,9 @@ public class IntegrityCheckJob {
         summary.setTopic(topic);
         String lastPosition = contentStore.lastPosition(topic);
         summary.setLastPosition(lastPosition);
-        try (ContentStreamConsumer consumer = contentStore.contentStream().consumer(topic)) {
+        ContentStream contentStream = contentStore.contentStream();
+        try {
+            ContentStreamConsumer consumer = contentStream.consumer(topic);
             ContentStreamBuffer buffer;
             ContentStreamBuffer peekBuffer = null;
             boolean test = true;
@@ -84,9 +90,14 @@ public class IntegrityCheckJob {
                 }
 
                 index.commitQueue();
+
                 generateReport();
 
                 summary.setEnded();
+
+                generateSummary(summary.build());
+
+                contentStream.closeAndRemoveConsumer(topic);
             }
 
         } catch (Exception e) {
@@ -96,6 +107,17 @@ public class IntegrityCheckJob {
 
     public void terminate() {
         terminated.set(true);
+    }
+
+    public void generateSummary(IntegrityCheckJobSummary.Summary summary) {
+        try {
+            Path summaryFilenamePath = index.getDatabaseDir().resolve("report").resolve("summary.json");
+            Files.createDirectories(summaryFilenamePath.getParent());
+            String jsonSummary = JsonParser.createJsonParser().toPrettyJSON(summary);
+            Files.write(summaryFilenamePath, jsonSummary.getBytes());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // generate a duplicate report in json format

@@ -107,7 +107,7 @@ public class IntegrityCheckTest {
         LOG.trace("summary: {}", json);
     }
 
-    @Disabled
+//    @Disabled
     @Test
     void testIntegrityCheckerController() throws InterruptedException {
         DynamicConfiguration configuration = new StoreBasedDynamicConfiguration.Builder()
@@ -141,9 +141,11 @@ public class IntegrityCheckTest {
         {
             while (true) {
                 ResponseHelper<String> response = client.get("/check-integrity/2020-test-stream");
-                JsonNode statusNode = JsonParser.createJsonParser().fromJson(response.body(), JsonNode.class).get("status");
-                if ("CLOSED".equals(statusNode.asText())) {
-                    break;
+                if (!response.body().isEmpty()) {
+                    JsonNode statusNode = JsonParser.createJsonParser().fromJson(response.body(), JsonNode.class).get("status");
+                    if ("CLOSED".equals(statusNode.asText())) {
+                        break;
+                    }
                 }
                 Thread.sleep(250);
             }

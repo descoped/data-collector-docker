@@ -8,15 +8,10 @@ import no.ssb.dc.api.http.Request;
 import no.ssb.dc.api.util.JsonParser;
 import no.ssb.dc.application.spi.Controller;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -129,6 +124,10 @@ public class IntegrityCheckController implements Controller {
             return;
         }
         IntegrityCheckJobSummary.Summary summary = service.getJobSummary(topic);
+        if (summary == null) {
+            exchange.setStatusCode(404);
+            return;
+        }
         JsonParser jsonParser = JsonParser.createJsonParser();
         String responseBody = jsonParser.toPrettyJSON(summary);
 
@@ -148,80 +147,18 @@ public class IntegrityCheckController implements Controller {
             return;
         }
 
-        /*
-         * The check-integrity job updates the summary metrics and is kept in memory (Service.jobs).
-         * The summary object contains a report-path and report-id that points a file containing duplicates (json-array).
-         */
-
         IntegrityCheckJobSummary.Summary summary = service.getJobSummary(topic);
-        JsonParser jsonParser = JsonParser.createJsonParser();
-        String jsonSummaryResponseBody = jsonParser.toPrettyJSON(summary);
+        Path summaryReportFilePath = summary.reportPath.resolve(topic + ".json");
 
-        Path reportFilePath = summary.reportPath.resolve(summary.reportId);
-        Path fullSummaryFilePath = summary.reportPath.resolve(topic + ".json");
-
-        if (!fullSummaryFilePath.toFile().exists()) {
-            exchange.setStatusCode(HttpStatus.HTTP_GONE.code());
-            exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
-            exchange.getResponseSender().send("{\"failed\": \"The summary report is missing. Re-run the integrity checker\"}");
-            return;
-        }
-
-        boolean firstJsonSummaryLine = false;
-        try (BufferedReader jsonSummaryReader = new BufferedReader(new StringReader(jsonSummaryResponseBody))) {
-            try (FileWriter jsonSummaryFileWriter = new FileWriter(fullSummaryFilePath.toFile(), true)) {
-                try (BufferedWriter jsonSummaryBufferedWriter = new BufferedWriter(jsonSummaryFileWriter)) {
-                    jsonSummaryBufferedWriter.write("{");
-                    jsonSummaryBufferedWriter.newLine();
-                    String jsonSummaryLine = jsonSummaryReader.readLine();
-                    while (jsonSummaryLine != null) {
-                        if (!firstJsonSummaryLine) {
-                            firstJsonSummaryLine = true;
-                            jsonSummaryLine = jsonSummaryReader.readLine();
-                            continue;
-                        }
-
-                        if ("}".equals(jsonSummaryLine)) {
-                            break;
-                        }
-
-                        jsonSummaryBufferedWriter.write(jsonSummaryLine);
-                        jsonSummaryBufferedWriter.newLine();
-
-                        jsonSummaryLine = jsonSummaryReader.readLine();
-                    }
-
-                    // write full summary
-                    jsonSummaryBufferedWriter.write(" ,\"duplicates\" : ");
-                    try (BufferedReader jsonReportReader = new BufferedReader(new FileReader(reportFilePath.toFile()))) {
-                        String jsonReportLine = jsonReportReader.readLine();
-                        boolean skippedReportLine = false;
-                        while (jsonReportLine != null) {
-                            if (skippedReportLine) {
-                                jsonSummaryBufferedWriter.write("    ");
-                            }
-                            if (!skippedReportLine) {
-                                skippedReportLine = true;
-                            }
-                            jsonSummaryBufferedWriter.write(jsonReportLine);
-                            jsonSummaryBufferedWriter.newLine();
-                            jsonReportLine = jsonReportReader.readLine();
-                        }
-                    }
-
-                    jsonSummaryBufferedWriter.write("}");
-                    jsonSummaryBufferedWriter.newLine();
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (!summaryReportFilePath.toFile().exists()) {
+            service.writeJobSummaryReport(topic, summaryReportFilePath, summary);
         }
 
         exchange.setStatusCode(200);
         exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "application/json");
         exchange.startBlocking();
         try (OutputStream outputStream = exchange.getOutputStream()) {
-            try (InputStream inputStream = new FileInputStream(fullSummaryFilePath.toFile())) {
+            try (InputStream inputStream = new FileInputStream(summaryReportFilePath.toFile())) {
                 byte[] buf = new byte[8192];
                 int c;
                 while ((c = inputStream.read(buf, 0, buf.length)) > 0) {
