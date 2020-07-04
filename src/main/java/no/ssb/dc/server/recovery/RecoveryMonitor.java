@@ -24,6 +24,10 @@ public class RecoveryMonitor {
     final AtomicReference<String> targetTopic = new AtomicReference<>();
     final AtomicLong bufferedPositions = new AtomicLong(0);
     final AtomicLong copiedPositions = new AtomicLong(0);
+    final AtomicLong postCheckFromTimestamp = new AtomicLong(0);
+    final AtomicReference<String> postCheckStartPosition = new AtomicReference<>();
+    final AtomicReference<String> postCheckLastPosition = new AtomicReference<>();
+    final AtomicLong postCheckCheckedPositions = new AtomicLong(0);
 
     void setStarted() {
         started.set(System.currentTimeMillis());
@@ -71,6 +75,22 @@ public class RecoveryMonitor {
         copiedPositions.addAndGet(numberOfPositions);
     }
 
+    void setPostCheckFromTimestamp(long timestamp) {
+        postCheckFromTimestamp.set(timestamp);
+    }
+
+    void setPostCheckStartPosition(String position) {
+        postCheckStartPosition.set(position);
+    }
+
+    void setPostCheckLastPosition(String position) {
+        postCheckLastPosition.set(position);
+    }
+
+    void incrementPostCheckCheckedPositions() {
+        postCheckCheckedPositions.incrementAndGet();
+    }
+
     public Summary build() {
         return new Summary(
                 running.get(),
@@ -83,16 +103,19 @@ public class RecoveryMonitor {
                 sourceTopic.get(),
                 targetTopic.get(),
                 bufferedPositions.get(),
-                copiedPositions.get()
+                copiedPositions.get(),
+                postCheckFromTimestamp.get(),
+                postCheckStartPosition.get(),
+                postCheckLastPosition.get(),
+                postCheckCheckedPositions.get()
         );
     }
-
     public static class Summary {
 
         @JsonProperty public final String status;
         @JsonProperty public final String started;
         @JsonProperty public final String ended;
-        @JsonProperty public String since;
+        @JsonProperty public final String since;
         @JsonProperty public final String startPosition;
         @JsonProperty public final String currentPosition;
         @JsonProperty public final String lastPosition;
@@ -102,6 +125,10 @@ public class RecoveryMonitor {
         @JsonProperty public final long bufferedPositions;
         @JsonProperty public final long copiedPositions;
         @JsonProperty public final float averageCopiedPositionsPerSecond;
+        @JsonProperty public final String postCheckFromTimestamp;
+        @JsonProperty public final String postCheckStartPosition;
+        @JsonProperty public final String postCheckLastPosition;
+        @JsonProperty public final long postCheckCheckedPositions;
 
         public Summary(boolean running,
                        long started,
@@ -113,7 +140,11 @@ public class RecoveryMonitor {
                        String sourceTopic,
                        String targetTopic,
                        long bufferedPositions,
-                       long copiedPositions) {
+                       long copiedPositions,
+                       long postCheckFromTimestamp,
+                       String postCheckStartPosition,
+                       String postCheckLastPosition,
+                       long postCheckCheckedPositions) {
 
             this.status = running ? "RUNNING" : "COMPLETED";
             this.started = Instant.ofEpochMilli(started).toString();
@@ -127,6 +158,10 @@ public class RecoveryMonitor {
             this.targetTopic = targetTopic;
             this.bufferedPositions = bufferedPositions;
             this.copiedPositions = copiedPositions;
+            this.postCheckFromTimestamp = Instant.ofEpochMilli(postCheckFromTimestamp).toString();
+            this.postCheckStartPosition = postCheckStartPosition;
+            this.postCheckLastPosition = postCheckLastPosition;
+            this.postCheckCheckedPositions = postCheckCheckedPositions;
 
             long now = System.currentTimeMillis();
             Float averageRequestPerSecond = HealthResourceUtils.divide(copiedPositions, (now - started) / 1000);
