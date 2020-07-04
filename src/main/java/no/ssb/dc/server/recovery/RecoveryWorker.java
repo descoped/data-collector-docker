@@ -109,6 +109,10 @@ public class RecoveryWorker {
                 contentStream.closeAndRemoveConsumer(targetTopic);
             }
 
+            if (closed.get()) {
+                return;
+            }
+
             // test tail from last recovered position
             if (lastTimestamp.get() == 0) {
                 return;
@@ -116,9 +120,13 @@ public class RecoveryWorker {
 
             ContentStreamConsumer consumer = contentStream.consumer(targetTopic);
             try {
-                LOG.trace("Post check recovered positions from timestamp: {}", Instant.ofEpochMilli(lastTimestamp.get()).toString());
-                monitor.setPostCheckFromTimestamp(lastTimestamp.get());
-                consumer.seek(lastTimestamp.get());
+                ContentStreamBuffer lastRecoveredMessage = contentStream.lastMessage(targetTopic);
+                long fromTimestamp = lastRecoveredMessage != null && lastRecoveredMessage.ulid().timestamp() < lastTimestamp.get() ?
+                        lastRecoveredMessage.ulid().timestamp() :
+                        lastTimestamp.get();
+                LOG.trace("Post check recovered positions from timestamp: {}", Instant.ofEpochMilli(fromTimestamp).toString());
+                monitor.setPostCheckFromTimestamp(fromTimestamp);
+                consumer.seek(fromTimestamp);
                 ContentStreamBuffer buffer;
                 Path reportPath = getSequenceDatabaseLocation(configuration).resolve(targetTopic).resolve("report");
                 Files.createDirectories(reportPath);
