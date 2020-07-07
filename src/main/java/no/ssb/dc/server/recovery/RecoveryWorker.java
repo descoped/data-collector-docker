@@ -75,20 +75,16 @@ public class RecoveryWorker {
                 ContentStreamBuffer peekBuffer = null;
                 while (!closed.get() && (buffer = consumer.receive(15, TimeUnit.SECONDS)) != null) {
                     peekBuffer = buffer;
-                    ContentStreamBuffer.Builder producerBuilder = producer.builder();
+
                     monitor.setCurrentPosition(buffer.position());
-                    producerBuilder.ulid(buffer.ulid());
-                    producerBuilder.position(buffer.position());
-                    for (String key : buffer.keys()) {
-                        producerBuilder.put(key, buffer.get(key));
-                    }
-                    producer.produce(producerBuilder);
+                    producer.copy(buffer);
                     bufferedPositions.add(buffer.position());
                     monitor.incrementBufferedPositions();
 
                     if (bufferCounter.incrementAndGet() == publishAtCount) {
                         publishBuffers(bufferCounter, bufferedPositions, producer);
                     }
+
                     if (lastPosition.ulid().equals(buffer.ulid()) && lastPosition.position().equals(buffer.position())) {
                         if (!bufferedPositions.isEmpty()) {
                             publishBuffers(bufferCounter, bufferedPositions, producer);
