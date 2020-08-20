@@ -109,35 +109,36 @@ public class RawdataFileSystemService implements Service {
             LOG.info("Starting rawdata exporter!");
             ContentStreamBuffer buffer;
             try (ContentStreamConsumer consumer = contentStream.consumer(topic)) {
-                while (!closed.get() && (buffer = consumer.receive(1, TimeUnit.SECONDS)) != null) {
-                    Path filePath = targetPath.resolve(buffer.position()).normalize();
-                    if (!Files.exists(filePath)) {
-                        Files.createDirectories(filePath);
-                    }
-
-                    for (String key : buffer.keys()) {
-                        byte[] data = buffer.get(key);
-                        String content = new String(data, StandardCharsets.UTF_8);
-
-                        MediaType mediaType = detector.detect(new ByteArrayInputStream(data), metadata);
-                        String subtype = mediaType.getSubtype();
-                        if ("plain".equals(subtype)) {
-                            if (content.startsWith("{") || content.startsWith("[") && !key.endsWith(".json")) {
-                                subtype = ".json";
-                            } else if (content.startsWith("<")) {
-                                subtype = ".xml";
-                            } else {
-                                subtype = "";
-                            }
-                        } else {
-                            subtype = "." + subtype;
+                while (!closed.get()) {
+                    if ((buffer = consumer.receive(1, TimeUnit.SECONDS)) != null) {
+                        Path filePath = targetPath.resolve(buffer.position()).normalize();
+                        if (!Files.exists(filePath)) {
+                            Files.createDirectories(filePath);
                         }
 
-                        Path contentFilePath = filePath.resolve(filePath.resolve(key) + subtype);
-                        Files.write(contentFilePath, data);
+                        for (String key : buffer.keys()) {
+                            byte[] data = buffer.get(key);
+                            String content = new String(data, StandardCharsets.UTF_8);
+
+                            MediaType mediaType = detector.detect(new ByteArrayInputStream(data), metadata);
+                            String subtype = mediaType.getSubtype();
+                            if ("plain".equals(subtype)) {
+                                if (content.startsWith("{") || content.startsWith("[") && !key.endsWith(".json")) {
+                                    subtype = ".json";
+                                } else if (content.startsWith("<")) {
+                                    subtype = ".xml";
+                                } else {
+                                    subtype = "";
+                                }
+                            } else {
+                                subtype = "." + subtype;
+                            }
+
+                            Path contentFilePath = filePath.resolve(filePath.resolve(key) + subtype);
+                            Files.write(contentFilePath, data);
+                        }
                     }
                 }
-
                 LOG.info("Stop rawdata exporter!");
 
             } catch (Exception e) {
