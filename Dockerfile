@@ -1,36 +1,59 @@
-FROM statisticsnorway/lds-server-base:latest as build
+FROM statisticsnorway/alpine-jdk13-buildtools:latest as build
 
 #
 # Build DataCollector Backend
 #
-RUN ["jlink", "--strip-debug", "--no-header-files", "--no-man-pages", "--compress=2", "--module-path", "/opt/jdk/jmods", "--output", "/linked",\
- "--add-modules", "jdk.unsupported,java.base,java.management,java.net.http,java.xml,java.naming,java.sql,java.desktop,java.security.jgss,java.instrument,jdk.internal.vm.compiler"]
-COPY pom.xml /dc/server/
-WORKDIR /dc/server
-RUN mvn -B verify dependency:go-offline
-COPY src /dc/server/src/
-RUN mvn -B verify && mvn -B dependency:copy-dependencies
+
 
 #
 # Build DataCollector image
 #
 FROM alpine:latest
 
-RUN apk add --no-cache curl openssl
+RUN apk add --no-cache bash su-exec curl openssl
+
+ENV DC_HOME=/opt/dc
+
+ENV JAVA_OPTS=
+ENV PROXY_HTTP_HOST=
+ENV PROXY_HTTP_PORT=
+ENV PROXY_HTTPS_HOST=
+ENV PROXY_HTTPS_PORT=
+ENV ENABLE_JMX_REMOTE_DEBUGGING=true
+
+#ENV UID=dc
+#ENV GID=dc
+
+#RUN useradd -r --create-home --home-dir $DC_HOME --groups $GID --shell /bin/bash $UID
 
 #
 # Resources from build image
 #
-COPY --from=build /linked /opt/jdk/
-COPY --from=build /dc/server/target/dependency /opt/dc/lib/
-COPY --from=build /dc/server/target/data-collector-*.jar /opt/dc/lib/
+COPY --from=build /opt/jdk /opt/jdk/
+COPY target/dependency $DC_HOME/lib/
+RUN mkdir -p /ld_lib \
+    && LMDB_NATIVE_JAR=$(find $DC_HOME/lib -type f -iname 'jffi-*-native.jar') \
+    && unzip "$LMDB_NATIVE_JAR" "jni/x86_64-Linux/*" -d /ld_lib \
+    && rm -f "$LMDB_NATIVE_JAR"
+COPY target/data-collector-*.jar $DC_HOME/lib/
+COPY target/classes/logback-stash.xml $DC_HOME/
+
+ADD docker/start-collector.sh /run.sh
+RUN chmod +x /run.sh
+
+#COPY docker/entrypoint.bash /entrypoint.sh
+#RUN chmod +x /entrypoint.sh
 
 ENV PATH=/opt/jdk/bin:$PATH
+ENV JAVA_HOME=/opt/jdk
+ENV LD_LIBRARY_PATH=/ld_lib/jni/x86_64-Linux/:$LD_LIBRARY_PATH
 
-WORKDIR /opt/dc
+WORKDIR $DC_HOME
 
 VOLUME ["/conf", "/certs"]
 
 EXPOSE 9990
+EXPOSE 9992
 
-CMD ["java", "-XX:+UnlockExperimentalVMOptions", "-XX:+EnableJVMCI", "-p", "/opt/dc/lib", "-m", "no.ssb.dc.server/no.ssb.dc.server.Server"]
+#ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/run.sh"]
