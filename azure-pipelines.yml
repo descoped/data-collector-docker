@@ -77,10 +77,10 @@ jobs:
           mkdir target
           cp $(Pipeline.Workspace)/data-collector/*.jar ./target
         displayName: 'Copy pipeline artifact into working directory'
-        
+
       - bash: |
           echo $PWD
-          ls
+          ls target
         displayName: 'dir test'
   # Build Docker image
       - task: Docker@2
