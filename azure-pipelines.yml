@@ -84,7 +84,7 @@ jobs:
       # Copy pipeline artifact into working directory
       - bash: |
           mkdir target
-          cp $(Pipeline.Workspace)/data-collector/*.jar ./target
+          cp $(Pipeline.Workspace)/data-collector/* ./target
         displayName: 'Copy pipeline artifact into working directory'
 
       - bash: |
