@@ -18,7 +18,7 @@ resources:
 
 # Pipeline will be run on this base image
 pool:
-  vmImage: 'maven:3-jdk-11'
+  vmImage: 'ubuntu-latest'
 
 variables:
   - name: fullSha
@@ -77,7 +77,11 @@ jobs:
           mkdir target
           cp $(Pipeline.Workspace)/data-collector/*.jar ./target
         displayName: 'Copy pipeline artifact into working directory'
-
+        
+      - bash: |
+          echo $PWD
+          ls
+        displayName: 'dir test'
   # Build Docker image
       - task: Docker@2
         displayName: 'Docker build'
