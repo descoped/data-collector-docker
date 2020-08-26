@@ -78,13 +78,13 @@ jobs:
       # Download pipleline artifact
       - download: current
         displayName: 'Download pipeline artifact'
-        patterns: '**/*.jar'
+       # patterns: '**/*.jar'
         artifact: 'data-collector'
 
       # Copy pipeline artifact into working directory
       - bash: |
           mkdir target
-          cp $(Pipeline.Workspace)/data-collector/* ./target
+          cp -r $(Pipeline.Workspace)/data-collector/* ./target
         displayName: 'Copy pipeline artifact into working directory'
 
       - bash: |
