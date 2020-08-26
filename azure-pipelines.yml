@@ -56,7 +56,16 @@ jobs:
 
       - template: maven/task-sonar-analyze.yml@templates
 
-      - template: maven/task-install-and-deploy-to-nexus.yml@templates
+      - task: Maven@3
+        displayName: 'Maven install and deploy'
+        inputs:
+          mavenPomFile: 'pom.xml'
+          mavenOptions: '-Xmx3072m'
+          jdkArchitectureOption: 'x64'
+          publishJUnitResults: false
+          testResultsFiles: '**/TEST-*.xml'
+          goals: 'deploy'
+          options: '-DskipTests=true -B dependency:copy-dependencies -Dmaven.javadoc.skip=true -U -P ssb-bip --batch-mode -Djdk.tls.client.protocols="TLSv1.2" $(MAVEN_OPTS)'
 
       # Publish pipeline artifact
       - publish: target
