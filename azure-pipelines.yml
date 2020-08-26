@@ -63,6 +63,9 @@ jobs:
         displayName: 'Publish artifact to pipeline'
         artifact: 'data-collector'
 
+  - job: dockerBuildAndDockerPush
+    dependsOn: buildTestPublishToPipeline
+    steps:
       # Download pipleline artifact
       - download: current
         displayName: 'Download pipeline artifact'
