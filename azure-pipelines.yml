@@ -1,19 +1,132 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
+name: $(Build.SourceBranch)-$(date:yyyyMMdd)$(rev:.r)
+# Pipeline triggers on any branch and tag
 trigger:
-- master
+  branches:
+    include:
+      - '*'
+  tags:
+    include:
+      - '*'
 
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: statisticsnorway/azure-pipelines-templates
+      ref: refs/tags/0.0.8
+      endpoint: statisticsnorway (6)
+
+# Pipeline will be run on this base image
 pool:
   vmImage: 'ubuntu-latest'
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
+  - name: fullSha
+    value: '$(Build.SourceVersion)'
+  - name: imageName
+    value: 'eu.gcr.io/prod-bip/data-collector'
+  - name: repoName
+    value: 'prod-bip/data-collector'
+  - name:  MAVEN_CACHE_FOLDER
+    value: $(Pipeline.Workspace)/.m2/repository
+  - name: MAVEN_OPTS
+    value: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+# Job which runs mvn test and verify, Sonar Analysis (if branch is master), mvn install,
+# builds Docker image, pushes this to GCR and checks for any image vulnerabilities
+jobs:
+  - job: buildTestPublishToPipeline
+    displayName: 'Test/build app and Dockerimage'
+    container: 'maven:3-jdk-11'
+    # Job condition: Run these jobs on any branch, but not on tags
+    condition: not(startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+    # Steps in this Job
+    steps:
+      # Authenticate Maven to Nexus using predefined Service Connections
+      # (Project Settings->Pipelines->Service Connections)
+      - task: MavenAuthenticate@0
+        displayName: 'Maven authenticate'
+        inputs:
+          mavenServiceConnections: 'mvnSsbBipPublic, mvnSsbBipReleases, mvnSsbBipSnapshots'
+
+      # Maven caching to speed up pipeline build time
+      - template: maven/task-cache.yml@templates
+
+      - template: maven/task-test-and-verify.yml@templates
+
+      - template: maven/task-sonar-analyze.yml@templates
+
+      - template: maven/task-install-and-deploy-to-nexus.yml@templates
+
+      # Publish pipeline artifact
+      - publish: target
+        displayName: 'Publish artifact to pipeline'
+        artifact: 'data-collector'
+
+  - job: dockerBuildAndDockerPush
+    steps:
+      # Download pipleline artifact
+      - download: current
+        displayName: 'Download pipeline artifact'
+        patterns: '**/*.jar'
+        artifact: 'data-collector'
+
+      # Copy pipeline artifact into working directory
+      - bash: |
+          mkdir target
+          cp $(Pipeline.Workspace)/data-collector/*.jar ./target
+        displayName: 'Copy pipeline artifact into working directory'
+
+  # Build Docker image
+      - task: Docker@2
+        displayName: 'Docker build'
+        inputs:
+          repository: $(imageName)
+          command: 'build'
+          Dockerfile: 'Dockerfile'
+          tags: |
+            $(Build.SourceBranchName)-imagescan-$(fullSha)
+
+  # Authenticate Docker to GCR using predefined service connection
+      - task: Docker@2
+        displayName: 'Login to GCR'
+        inputs:
+          command: login
+          containerRegistry: gcrServiceConnection
+
+  # Push Docker Image to GCR
+      - task: Docker@2
+        displayName: 'Push image'
+        inputs:
+          ContainerRegistry: |
+            gcrServiceConnection
+          repository: $(repoName)
+          command: 'push'
+          tags: |
+            $(Build.SourceBranchName)-imagescan-$(fullSha)
+
+  # Download file with json-key to GCR as a later task needs to
+  # authenticate in a different way than using service connection
+  # File is stored in Pipelines->Library->Secure Files
+      - task: DownloadSecureFile@1
+        name: gcrJsonKey
+        displayName: 'Download gcr creds'
+        inputs:
+          secureFile: 'gcr-key.json'
+
+  # Set env variable pointing to the file downloaded in previous task
+  # as a library in next task needs this env variable
+      - script: |
+          echo "Setting env variable GOOGLE_APPLICATION_CREDENTIALS"
+          echo "##vso[task.setvariable variable=GOOGLE_APPLICATION_CREDENTIALS]$(gcrJsonKey.secureFilePath)"
+        displayName: 'Setting GOOGLE_APPLICATION_CREDENTIALS env variable'
+
+  # Wait for scan on image in GCR to complete and check for any vulnerabilities
+  # with effective severity HIGH or CRITICAL
+      - task: gcr-vulneralbility-check@0
+        displayName: 'Image vulnerability check'
+        inputs:
+          projectId: 'prod-bip'
+          imageHost: 'https://eu.gcr.io/'
+          image: 'prod-bip/data-collector'
+          imageTag: '$(Build.SourceBranchName)-imagescan-$(fullSha)'
