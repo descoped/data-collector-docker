@@ -18,7 +18,7 @@ resources:
 
 # Pipeline will be run on this base image
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: 'maven:3-jdk-11'
 
 variables:
   - name: fullSha
