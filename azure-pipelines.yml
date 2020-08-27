@@ -55,7 +55,7 @@ jobs:
       - template: maven/task-test-and-verify.yml@templates
 
       - template: maven/task-sonar-analyze.yml@templates
-
+      # deploy package, and copy dependency libs
       - task: Maven@3
         displayName: 'Maven install and deploy'
         inputs:
@@ -78,7 +78,6 @@ jobs:
       # Download pipleline artifact
       - download: current
         displayName: 'Download pipeline artifact'
-       # patterns: '**/*.jar'
         artifact: 'data-collector'
 
       # Copy pipeline artifact into working directory
@@ -87,10 +86,6 @@ jobs:
           cp -r $(Pipeline.Workspace)/data-collector/* ./target
         displayName: 'Copy pipeline artifact into working directory'
 
-      - bash: |
-          echo $PWD
-          ls target
-        displayName: 'dir test'
   # Build Docker image
       - task: Docker@2
         displayName: 'Docker build'
