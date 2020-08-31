@@ -143,7 +143,7 @@ jobs:
       - script: |
           TAG=`git describe --tags`
           echo $TAG
-          cat $(gcrJsonKey.secureFilePath) | docker login -u _json_key --password-stdin ${{ parameters.imageHost }}
+          cat $(gcrJsonKey.secureFilePath) | docker login -u _json_key --password-stdin 'https://eu.gcr.io/'
           docker pull ${{ parameters.imageName }}:imagescan-$(Build.SourceBranchName)-$(fullSha)
           docker tag ${{ parameters.imageName }}:imagescan-$(Build.SourceBranchName)-$(fullSha) ${{ parameters.imageName }}:$(Build.SourceBranchName)-$(fullSha)
           docker push ${{ parameters.imageName }}:$(Build.SourceBranchName)-$(fullSha)
