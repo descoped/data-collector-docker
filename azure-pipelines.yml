@@ -13,7 +13,7 @@ resources:
     - repository: templates
       type: github
       name: statisticsnorway/azure-pipelines-templates
-      ref: refs/tags/0.0.8
+      ref: refs/tags/0.0.10
       endpoint: statisticsnorway (6)
 
 # Pipeline will be run on this base image
@@ -75,7 +75,7 @@ jobs:
   - job: dockerBuildAndDockerPush
     dependsOn: buildTestPublishToPipeline
     steps:
-      # Download pipleline artifact
+      # Download pipeline artifact
       - download: current
         displayName: 'Download pipeline artifact'
         artifact: 'data-collector'
@@ -112,7 +112,7 @@ jobs:
           repository: $(repoName)
           command: 'push'
           tags: |
-            $(Build.SourceBranchName)-imagescan-$(fullSha)
+            imagescan-$(Build.SourceBranchName)-$(fullSha)
 
   # Download file with json-key to GCR as a later task needs to
   # authenticate in a different way than using service connection
@@ -138,4 +138,14 @@ jobs:
           projectId: 'prod-bip'
           imageHost: 'https://eu.gcr.io/'
           image: 'prod-bip/data-collector'
-          imageTag: '$(Build.SourceBranchName)-imagescan-$(fullSha)'
+          imageTag: 'imagescan-$(Build.SourceBranchName)-$(fullSha)'
+
+      - script: |
+          TAG=`git describe --tags`
+          echo $TAG
+          cat $(gcrJsonKey.secureFilePath) | docker login -u _json_key --password-stdin ${{ parameters.imageHost }}
+          docker pull ${{ parameters.imageName }}:imagescan-$(Build.SourceBranchName)-$(fullSha)
+          docker tag ${{ parameters.imageName }}:imagescan-$(Build.SourceBranchName)-$(fullSha) ${{ parameters.imageName }}:$(Build.SourceBranchName)-$(fullSha)
+          docker push ${{ parameters.imageName }}:$(Build.SourceBranchName)-$(fullSha)
+        displayName: "Retagging docker image if successful vulnerability scan"
+        condition: succeeded()
