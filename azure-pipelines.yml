@@ -21,7 +21,6 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-
   - group: Hemmeligheter
   - name: fullSha
     value: '$(Build.SourceVersion)'
