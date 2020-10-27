@@ -1,4 +1,4 @@
-FROM statisticsnorway/alpine-jdk13-buildtools:latest as build
+FROM statisticsnorway/alpine-jdk15-buildtools:latest as build
 
 #
 # Build DC Backend
