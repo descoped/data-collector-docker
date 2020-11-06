@@ -4,17 +4,17 @@ import ch.qos.logback.classic.ClassicConstants;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dapla.secrets.api.SecretManagerClient;
-import no.ssb.dc.api.config.BusinessSSLBundle;
-import no.ssb.dc.api.config.ContentStreamEncryptionCredentials;
+import no.ssb.dc.api.security.BusinessSSLBundle;
 import no.ssb.dc.application.server.UndertowApplication;
+import no.ssb.dc.application.ssl.BusinessSSLBundleSupplier;
 import no.ssb.dc.core.metrics.MetricsAgent;
 import no.ssb.dc.core.util.JavaUtilLoggerBridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class Server {
@@ -62,73 +62,70 @@ public class Server {
 
         StoreBasedDynamicConfiguration configuration = configurationBuilder.build();
 
-
-        Supplier<ContentStreamEncryptionCredentials> contentEncryptionCredentialsSupplier = () -> {
-            if (true/*check IF NOT use delegated encryption credentials config*/) {
-                return null;
-            }
-            // TODO config mapping
-            Map<String, String> providerConfiguration = Map.of(
-                    "secrets.provider", "google-secret-manager",
-                    "secrets.projectId", "ssb-team-dapla",
-                    "secrets.serviceAccountKeyPath", "FULL_PATH_TO_SERVICE_ACCOUNT.json"
-            );
-            try (SecretManagerClient secretManagerClient = SecretManagerClient.create(providerConfiguration)) {
-                return new ContentStreamEncryptionCredentials() {
-                    @Override
-                    public char[] key() {
-                        final byte[] encryptionKey = secretManagerClient.readBytes("secrets.encryptionKey");
-                        try {
-                            return ByteBuffer.wrap(encryptionKey).asCharBuffer().array();
-                        } finally {
-                            Arrays.fill(encryptionKey, (byte) 0);
-                        }
-                    }
-
-                    @Override
-                    public byte[] salt() {
-                        final byte[] encryptionSalt = secretManagerClient.readBytes("secrets.encryptionSalt");
-                        try {
-                            return encryptionSalt;
-                        } finally {
-                            Arrays.fill(encryptionSalt, (byte) 0);
-                        }
-                    }
-                };
-            }
-        };
+        /*
+         * Delegated certificate loader from Google Secret Manager is placed here, because we don't won't a
+         * dependency in the data collector to any host aware libraries such as the Google Secret Manager.
+         * The supplier is wrapped by the BusinessSSLBundleSupplier and passes an implementing instance of
+         * BusinessSSLBundle to Worker.useBusinessSSLBundleSupplier() in the Core module.
+         *
+         * Please note: only Google Secret Manager is supported!
+         */
 
         Supplier<BusinessSSLBundle> sslBundleSupplier = () -> {
-            if (true/*check IF NOT use delegated sslBundle config*/) {
+            String businessSslBundleProvider = configuration.evaluateToString("data.collector.sslBundle.provider");
+            if (!"google-secret-manager".equals(businessSslBundleProvider)) {
                 return null;
             }
-            // TODO config mapping
-            Map<String, String> providerConfiguration = Map.of(
-                    "secrets.provider", "google-secret-manager",
-                    "secrets.projectId", "ssb-team-dapla",
-                    "secrets.serviceAccountKeyPath", "FULL_PATH_TO_SERVICE_ACCOUNT.json"
-            );
+
+            Map<String, String> providerConfiguration = new LinkedHashMap<>();
+            providerConfiguration.put("secrets.provider", businessSslBundleProvider);
+            providerConfiguration.put("secrets.projectId", configuration.evaluateToString("data.collector.sslBundle.gcs.projectId"));
+                String gcsServiceAccountKeyPath = configuration.evaluateToString("data.collector.sslBundle.gcs.serviceAccountKeyPath");
+            if (gcsServiceAccountKeyPath != null) {
+                providerConfiguration.put("secrets.serviceAccountKeyPath", gcsServiceAccountKeyPath);
+            }
+
             try (SecretManagerClient secretManagerClient = SecretManagerClient.create(providerConfiguration)) {
                 return new BusinessSSLBundle() {
+
+                    String getType() {
+                        return configuration.evaluateToString("data.collector.sslBundle.type");
+                    }
+
+                    boolean isPEM() {
+                        Objects.requireNonNull(getType());
+                        return "pem".equalsIgnoreCase(getType());
+                    }
+
+                    @Override
+                    public String bundleName() {
+                        return secretManagerClient.readString("data.collector.sslBundle.name");
+                    }
+
                     @Override
                     public byte[] publicCertificate() {
-                        return new byte[0];
+                        return isPEM() ? secretManagerClient.readBytes("data.collector.sslBundle.publicCertificate") : new byte[0];
                     }
 
                     @Override
                     public byte[] privateCertificate() {
-                        return new byte[0];
+                        return isPEM() ? secretManagerClient.readBytes("data.collector.sslBundle.privateCertificate") : new byte[0];
+                    }
+
+                    @Override
+                    public byte[] archiveCertificate() {
+                        return !isPEM() ? secretManagerClient.readBytes("data.collector.sslBundle.archiveCertificate") : new byte[0];
                     }
 
                     @Override
                     public byte[] passphrase() {
-                        return new byte[0];
+                        return secretManagerClient.readBytes("data.collector.sslBundle.passphrase");
                     }
                 };
             }
         };
 
-        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration, contentEncryptionCredentialsSupplier, sslBundleSupplier);
+        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration, new BusinessSSLBundleSupplier(sslBundleSupplier));
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {

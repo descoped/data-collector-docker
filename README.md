@@ -74,6 +74,32 @@ Follow these instructions for setting up profiling.
 1. Set port to 9992
 1. `make collect-freg-playground`
 
+## Configuration
+
+### Google Secret Manager SSL properties
+
+```
+data.collector.sslBundle.provider=google-secret-manager
+data.collector.sslBundle.gcs.projectId=SECRET_MANAGER_PROJECT_ID
+data.collector.sslBundle.gcs.serviceAccountKeyPath=(optional)
+data.collector.sslBundle.type=(pem | p12)
+data.collector.sslBundle.name=ssb-prod-certs
+data.collector.sslBundle.publicCertificate=secretName
+data.collector.sslBundle.privateCertificate=secretName
+data.collector.sslBundle.archiveCertificate=secretName
+data.collector.sslBundle.passphrase=secretNam
+```
+
+### Rawdata Encryption Credentials
+
+```
+rawdata.encryption.provider = (dynamic-secret-configuration | google-secret-manager)
+rawdata.encryption.gcp.projectId => google-secret-manager
+rawdata.encryption.gcp.serviceAccountKeyPath => google-secret-manager
+rawdata.encryption.key  = (encryptionKey | secretName)
+rawdata.encryption.salt = (encryptionSalt | secretName)
+```
+
 ### Logstash
 
 Set environment variable `LOGBACK_CONFIGURATION_FILE=/opt/dc/logback-stash.xml` to enable structured logging using Logstash.
