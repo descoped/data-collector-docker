@@ -13,6 +13,7 @@ module no.ssb.dc.server {
     requires no.ssb.rawdata.avro;
     requires no.ssb.rawdata.kafka;
     requires dapla.secrets.client.api;
+    requires dapla.secrets.provider.dynamic.configuration;
     requires dapla.secrets.provider.google.rest.api;
 
     requires java.instrument;
