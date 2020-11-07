@@ -12,6 +12,8 @@ module no.ssb.dc.server {
     requires no.ssb.rawdata.postgres;
     requires no.ssb.rawdata.avro;
     requires no.ssb.rawdata.kafka;
+    requires dapla.secrets.client.api;
+    requires dapla.secrets.provider.google.rest.api;
 
     requires java.instrument;
 
@@ -45,5 +47,6 @@ module no.ssb.dc.server {
     exports no.ssb.dc.server.db;
     exports no.ssb.dc.server.integrity;
     exports no.ssb.dc.server.recovery;
+    exports no.ssb.dc.server.ssl;
     exports no.ssb.dc.server.task;
 }

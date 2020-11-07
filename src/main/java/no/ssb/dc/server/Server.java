@@ -4,10 +4,14 @@ import ch.qos.logback.classic.ClassicConstants;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dc.application.server.UndertowApplication;
+import no.ssb.dc.application.ssl.BusinessSSLResourceSupplier;
+import no.ssb.dc.application.ssl.SecretManagerSSLResource;
 import no.ssb.dc.core.metrics.MetricsAgent;
 import no.ssb.dc.core.util.JavaUtilLoggerBridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.function.Supplier;
 
 public class Server {
 
@@ -25,7 +29,7 @@ public class Server {
         }
         JavaUtilLoggerBridge.installJavaUtilLoggerBridgeHandler();
         if (logbackConfigurationFile != null) {
-            LOG.debug("Using logback configuration: {}" , logbackConfigurationFile);
+            LOG.debug("Using logback configuration: {}", logbackConfigurationFile);
         }
 
         StoreBasedDynamicConfiguration.Builder configurationBuilder = new StoreBasedDynamicConfiguration.Builder()
@@ -33,7 +37,6 @@ public class Server {
                 .propertiesResource("/conf/application-defaults.properties")
                 .propertiesResource("/conf/application.properties")
                 .propertiesResource("/conf/application-override.properties");
-
         /*
          * pre-req: `docker-compose up` in this repo
          */
@@ -54,7 +57,21 @@ public class Server {
                 .systemProperties();
 
         StoreBasedDynamicConfiguration configuration = configurationBuilder.build();
-        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration);
+
+        /*
+         * Delegated certificate loader from Google Secret Manager is placed here, because we don't won't a
+         * dependency in the data collector to any host aware libraries such as the Google Secret Manager.
+         * The supplier is wrapped by the BusinessSSLResourceSupplier and passes an implementing instance of
+         * BusinessSSLBundle to Worker.useBusinessSSLResourceSupplier() in the Core module.
+         *
+         * Please note: only Google Secret Manager is supported!
+         */
+
+        String businessSslResourceProvider = configuration.evaluateToString("data.collector.sslBundle.provider");
+        Supplier<SecretManagerSSLResource> sslResourceSupplier = () -> new SecretManagerSSLResource(configuration);
+
+        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration,
+                businessSslResourceProvider != null ? new BusinessSSLResourceSupplier(sslResourceSupplier) : null);
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {

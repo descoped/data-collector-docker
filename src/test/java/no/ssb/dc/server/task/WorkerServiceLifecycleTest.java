@@ -28,19 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static no.ssb.dc.api.Builders.addContent;
-import static no.ssb.dc.api.Builders.context;
-import static no.ssb.dc.api.Builders.execute;
-import static no.ssb.dc.api.Builders.get;
-import static no.ssb.dc.api.Builders.nextPage;
-import static no.ssb.dc.api.Builders.paginate;
-import static no.ssb.dc.api.Builders.parallel;
-import static no.ssb.dc.api.Builders.publish;
-import static no.ssb.dc.api.Builders.regex;
-import static no.ssb.dc.api.Builders.sequence;
-import static no.ssb.dc.api.Builders.status;
-import static no.ssb.dc.api.Builders.whenVariableIsNull;
-import static no.ssb.dc.api.Builders.xpath;
+import static no.ssb.dc.api.Builders.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(TestServerExtension.class)
@@ -102,7 +90,7 @@ public class WorkerServiceLifecycleTest {
         applicationMonitor.setServerStatus(HealthApplicationMonitor.ServerStatus.RUNNING);
 
         WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), healthResourceFactory,
-                ContentStoreComponent.create(testServer.getConfiguration()), false, WorkerServiceLifecycleTest::workerLifecycleCallback);
+                null, ContentStoreComponent.create(testServer.getConfiguration()), false, WorkerServiceLifecycleTest::workerLifecycleCallback);
 
         if (false) {
             return Stream.of(new Task(workerService, createSpecificationBuilder(testServer, "&stopAt=1000", "?failWithStatusCode=404&failAt=1105"), true));

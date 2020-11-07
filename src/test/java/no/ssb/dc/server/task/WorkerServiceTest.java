@@ -15,19 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import javax.inject.Inject;
 import java.util.function.BiFunction;
 
-import static no.ssb.dc.api.Builders.addContent;
-import static no.ssb.dc.api.Builders.context;
-import static no.ssb.dc.api.Builders.execute;
-import static no.ssb.dc.api.Builders.get;
-import static no.ssb.dc.api.Builders.nextPage;
-import static no.ssb.dc.api.Builders.paginate;
-import static no.ssb.dc.api.Builders.parallel;
-import static no.ssb.dc.api.Builders.publish;
-import static no.ssb.dc.api.Builders.regex;
-import static no.ssb.dc.api.Builders.sequence;
-import static no.ssb.dc.api.Builders.status;
-import static no.ssb.dc.api.Builders.whenVariableIsNull;
-import static no.ssb.dc.api.Builders.xpath;
+import static no.ssb.dc.api.Builders.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(TestServerExtension.class)
@@ -81,7 +69,10 @@ public class WorkerServiceTest {
     @Disabled
     @Test
     public void testWorkerService() throws InterruptedException {
-        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create(),
+        WorkerService workerService = new WorkerService(testServer.getConfiguration(),
+                MetricsResourceFactory.create(),
+                HealthResourceFactory.create(),
+                null,
                 ContentStoreComponent.create(testServer.getConfiguration()));
 
         SpecificationBuilder specificationBuilder = specificationBuilderSupplier.apply(testServer.testURL(""), "");
@@ -98,7 +89,10 @@ public class WorkerServiceTest {
     @Disabled
     @Test
     public void testWorkerServiceWithFailAt() throws InterruptedException {
-        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create(),
+        WorkerService workerService = new WorkerService(testServer.getConfiguration(),
+                MetricsResourceFactory.create(),
+                HealthResourceFactory.create(),
+                null,
                 ContentStoreComponent.create(testServer.getConfiguration()));
 
         SpecificationBuilder specificationBuilder = specificationBuilderSupplier.apply(testServer.testURL(""), "&failWithStatusCode=404&failAt=1005");
