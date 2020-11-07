@@ -40,6 +40,8 @@ target/maven-archiver/
 
 dependency-reduced-pom.xml
 
+**/application-override.properties
+
 **/target
 
 **/*certs

@@ -3,7 +3,7 @@ package no.ssb.dc.server.task;
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.content.ContentStore;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
-import no.ssb.dc.api.security.BusinessSSLBundle;
+import no.ssb.dc.api.security.ProvidedBusinessSSLResource;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.application.metrics.MetricsResourceFactory;
@@ -16,7 +16,7 @@ import no.ssb.dc.core.health.HealthWorkerHistoryResource;
 import no.ssb.dc.core.health.HealthWorkerMonitor;
 import no.ssb.dc.core.health.HealthWorkerResource;
 import no.ssb.dc.server.content.ContentStoreComponent;
-import no.ssb.dc.server.ssl.BusinessSSLBundleComponent;
+import no.ssb.dc.server.ssl.BusinessSSLResourceComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +37,7 @@ public class WorkerService implements Service {
     private final MetricsResourceFactory metricsResourceFactory;
     private final HealthResourceFactory healthResourceFactory;
     private final WorkManager workManager = new WorkManager();
-    private final BusinessSSLBundleComponent businessSSLBundleComponent;
+    private final BusinessSSLResourceComponent businessSSLResourceComponent;
     private final boolean printExecutionPlan;
     private final WorkerObserver workerObserver;
     private final Consumer<WorkerLifecycleCallback> workerLifecycleCallback;
@@ -46,23 +46,23 @@ public class WorkerService implements Service {
     public WorkerService(DynamicConfiguration configuration,
                          MetricsResourceFactory metricsResourceFactory,
                          HealthResourceFactory healthResourceFactory,
-                         BusinessSSLBundleComponent businessSSLBundleComponent,
+                         BusinessSSLResourceComponent businessSSLResourceComponent,
                          ContentStoreComponent contentStoreComponent) {
-        this(configuration, metricsResourceFactory, healthResourceFactory, businessSSLBundleComponent, contentStoreComponent,
+        this(configuration, metricsResourceFactory, healthResourceFactory, businessSSLResourceComponent, contentStoreComponent,
                 configuration.evaluateToBoolean("data.collector.print-execution-plan"), null);
     }
 
     public WorkerService(DynamicConfiguration configuration,
                          MetricsResourceFactory metricsResourceFactory,
                          HealthResourceFactory healthResourceFactory,
-                         BusinessSSLBundleComponent businessSSLBundleComponent,
+                         BusinessSSLResourceComponent businessSSLResourceComponent,
                          ContentStoreComponent contentStoreComponent,
                          boolean printExecutionPlan,
                          Consumer<WorkerLifecycleCallback> workerLifecycleCallback) {
         this.configuration = configuration;
         this.metricsResourceFactory = metricsResourceFactory;
         this.healthResourceFactory = healthResourceFactory;
-        this.businessSSLBundleComponent = businessSSLBundleComponent;
+        this.businessSSLResourceComponent = businessSSLResourceComponent;
         this.printExecutionPlan = printExecutionPlan;
         this.workerLifecycleCallback = workerLifecycleCallback;
         this.workerObserver = new WorkerObserver(this::onWorkerStart, this::onWorkerFinish);
@@ -140,13 +140,13 @@ public class WorkerService implements Service {
                         .printExecutionPlan();
             }
 
-            if (businessSSLBundleComponent == null) {
+            if (businessSSLResourceComponent == null || businessSSLResourceComponent.getDelegate() == null) {
                 String configuredCertBundlesPath = configuration.evaluateToString("data.collector.certs.directory");
                 Path certBundlesPath = configuredCertBundlesPath == null ? CommonUtils.currentPath() : Paths.get(configuredCertBundlesPath);
                 workerBuilder.buildCertificateFactory(certBundlesPath);
             } else {
-                Supplier<BusinessSSLBundle> businessSSLBundleSupplier = businessSSLBundleComponent.getDelegate();
-                workerBuilder.useBusinessSSLBundleSupplier(businessSSLBundleSupplier);
+                Supplier<ProvidedBusinessSSLResource> businessSSLBundleSupplier = businessSSLResourceComponent.getDelegate();
+                workerBuilder.useBusinessSSLResourceSupplier(businessSSLBundleSupplier);
             }
 
             return workManager.run(workerBuilder).workerId.toString();

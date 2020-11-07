@@ -4,9 +4,9 @@ import ch.qos.logback.classic.ClassicConstants;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import no.ssb.config.StoreBasedDynamicConfiguration;
 import no.ssb.dapla.secrets.api.SecretManagerClient;
-import no.ssb.dc.api.security.BusinessSSLBundle;
+import no.ssb.dc.api.security.ProvidedBusinessSSLResource;
 import no.ssb.dc.application.server.UndertowApplication;
-import no.ssb.dc.application.ssl.BusinessSSLBundleSupplier;
+import no.ssb.dc.application.ssl.BusinessSSLResourceSupplier;
 import no.ssb.dc.core.metrics.MetricsAgent;
 import no.ssb.dc.core.util.JavaUtilLoggerBridge;
 import org.slf4j.Logger;
@@ -14,8 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Supplier;
+
+import static no.ssb.dc.api.security.ProvidedBusinessSSLResource.safeConvertBytesToCharArrayAsUTF8;
 
 public class Server {
 
@@ -71,7 +72,7 @@ public class Server {
          * Please note: only Google Secret Manager is supported!
          */
 
-        Supplier<BusinessSSLBundle> sslBundleSupplier = () -> {
+        Supplier<ProvidedBusinessSSLResource> sslResourceSupplier = () -> {
             String businessSslBundleProvider = configuration.evaluateToString("data.collector.sslBundle.provider");
             if (!"google-secret-manager".equals(businessSslBundleProvider)) {
                 return null;
@@ -86,15 +87,11 @@ public class Server {
             }
 
             try (SecretManagerClient secretManagerClient = SecretManagerClient.create(providerConfiguration)) {
-                return new BusinessSSLBundle() {
+                return new ProvidedBusinessSSLResource() {
 
-                    String getType() {
+                    @Override
+                    public String getType() {
                         return configuration.evaluateToString("data.collector.sslBundle.type");
-                    }
-
-                    boolean isPEM() {
-                        Objects.requireNonNull(getType());
-                        return "pem".equalsIgnoreCase(getType());
                     }
 
                     @Override
@@ -103,13 +100,13 @@ public class Server {
                     }
 
                     @Override
-                    public byte[] publicCertificate() {
-                        return isPEM() ? secretManagerClient.readBytes("data.collector.sslBundle.publicCertificate") : new byte[0];
+                    public char[] publicCertificate() {
+                        return isPEM() ? safeConvertBytesToCharArrayAsUTF8(secretManagerClient.readBytes("data.collector.sslBundle.publicCertificate")) : new char[0];
                     }
 
                     @Override
-                    public byte[] privateCertificate() {
-                        return isPEM() ? secretManagerClient.readBytes("data.collector.sslBundle.privateCertificate") : new byte[0];
+                    public char[] privateCertificate() {
+                        return isPEM() ? safeConvertBytesToCharArrayAsUTF8(secretManagerClient.readBytes("data.collector.sslBundle.privateCertificate")) : new char[0];
                     }
 
                     @Override
@@ -118,14 +115,14 @@ public class Server {
                     }
 
                     @Override
-                    public byte[] passphrase() {
-                        return secretManagerClient.readBytes("data.collector.sslBundle.passphrase");
+                    public char[] passphrase() {
+                        return safeConvertBytesToCharArrayAsUTF8(secretManagerClient.readBytes("data.collector.sslBundle.passphrase"));
                     }
                 };
             }
         };
 
-        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration, new BusinessSSLBundleSupplier(sslBundleSupplier));
+        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration, new BusinessSSLResourceSupplier(sslResourceSupplier));
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
