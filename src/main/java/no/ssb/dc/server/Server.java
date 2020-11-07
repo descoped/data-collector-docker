@@ -66,20 +66,22 @@ public class Server {
         /*
          * Delegated certificate loader from Google Secret Manager is placed here, because we don't won't a
          * dependency in the data collector to any host aware libraries such as the Google Secret Manager.
-         * The supplier is wrapped by the BusinessSSLBundleSupplier and passes an implementing instance of
-         * BusinessSSLBundle to Worker.useBusinessSSLBundleSupplier() in the Core module.
+         * The supplier is wrapped by the BusinessSSLResourceSupplier and passes an implementing instance of
+         * BusinessSSLBundle to Worker.useBusinessSSLResourceSupplier() in the Core module.
          *
          * Please note: only Google Secret Manager is supported!
          */
 
+        String businessSslResourceProvider = configuration.evaluateToString("data.collector.sslBundle.provider");
+        boolean hasBusinessSslResourceProvider = "google-secret-manager".equals(businessSslResourceProvider);
+
         Supplier<ProvidedBusinessSSLResource> sslResourceSupplier = () -> {
-            String businessSslBundleProvider = configuration.evaluateToString("data.collector.sslBundle.provider");
-            if (!"google-secret-manager".equals(businessSslBundleProvider)) {
+            if (!hasBusinessSslResourceProvider) {
                 return null;
             }
-
+            LOG.info("Create BusinessSSL resource provider: {}", businessSslResourceProvider);
             Map<String, String> providerConfiguration = new LinkedHashMap<>();
-            providerConfiguration.put("secrets.provider", businessSslBundleProvider);
+            providerConfiguration.put("secrets.provider", businessSslResourceProvider);
             providerConfiguration.put("secrets.projectId", configuration.evaluateToString("data.collector.sslBundle.gcs.projectId"));
                 String gcsServiceAccountKeyPath = configuration.evaluateToString("data.collector.sslBundle.gcs.serviceAccountKeyPath");
             if (gcsServiceAccountKeyPath != null) {
@@ -122,7 +124,7 @@ public class Server {
             }
         };
 
-        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration, new BusinessSSLResourceSupplier(sslResourceSupplier));
+        UndertowApplication application = UndertowApplication.initializeUndertowApplication(configuration, hasBusinessSslResourceProvider ? new BusinessSSLResourceSupplier(sslResourceSupplier) : null);
 
         try {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
