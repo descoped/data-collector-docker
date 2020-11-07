@@ -80,8 +80,8 @@ Follow these instructions for setting up profiling.
 
 ```
 data.collector.sslBundle.provider=google-secret-manager
-data.collector.sslBundle.gcs.projectId=SECRET_MANAGER_PROJECT_ID
-data.collector.sslBundle.gcs.serviceAccountKeyPath=(optional)
+data.collector.sslBundle.gcp.projectId=SECRET_MANAGER_PROJECT_ID
+data.collector.sslBundle.gcp.serviceAccountKeyPath=(optional)
 data.collector.sslBundle.type=(pem | p12)
 data.collector.sslBundle.name=ssb-prod-certs
 data.collector.sslBundle.publicCertificate=secretName
