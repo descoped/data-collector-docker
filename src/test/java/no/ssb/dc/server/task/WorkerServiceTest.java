@@ -69,8 +69,11 @@ public class WorkerServiceTest {
     @Disabled
     @Test
     public void testWorkerService() throws InterruptedException {
-        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create(),
-                null, ContentStoreComponent.create(testServer.getConfiguration()));
+        WorkerService workerService = new WorkerService(testServer.getConfiguration(),
+                MetricsResourceFactory.create(),
+                HealthResourceFactory.create(),
+                null,
+                ContentStoreComponent.create(testServer.getConfiguration()));
 
         SpecificationBuilder specificationBuilder = specificationBuilderSupplier.apply(testServer.testURL(""), "");
         String workerId = workerService.createOrRejectTask(specificationBuilder);
@@ -86,8 +89,11 @@ public class WorkerServiceTest {
     @Disabled
     @Test
     public void testWorkerServiceWithFailAt() throws InterruptedException {
-        WorkerService workerService = new WorkerService(testServer.getConfiguration(), MetricsResourceFactory.create(), HealthResourceFactory.create(),
-                null, ContentStoreComponent.create(testServer.getConfiguration()));
+        WorkerService workerService = new WorkerService(testServer.getConfiguration(),
+                MetricsResourceFactory.create(),
+                HealthResourceFactory.create(),
+                null,
+                ContentStoreComponent.create(testServer.getConfiguration()));
 
         SpecificationBuilder specificationBuilder = specificationBuilderSupplier.apply(testServer.testURL(""), "&failWithStatusCode=404&failAt=1005");
         try {
