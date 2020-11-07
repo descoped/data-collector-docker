@@ -3,7 +3,7 @@ package no.ssb.dc.server.task;
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.content.ContentStore;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
-import no.ssb.dc.api.security.ProvidedBusinessSSLResource;
+import no.ssb.dc.api.security.BusinessSSLResource;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.application.metrics.MetricsResourceFactory;
@@ -145,7 +145,7 @@ public class WorkerService implements Service {
                 Path certBundlesPath = configuredCertBundlesPath == null ? CommonUtils.currentPath() : Paths.get(configuredCertBundlesPath);
                 workerBuilder.buildCertificateFactory(certBundlesPath);
             } else {
-                Supplier<ProvidedBusinessSSLResource> businessSSLBundleSupplier = businessSSLResourceComponent.getDelegate();
+                Supplier<BusinessSSLResource> businessSSLBundleSupplier = businessSSLResourceComponent.getDelegate();
                 workerBuilder.useBusinessSSLResourceSupplier(businessSSLBundleSupplier);
             }
 
