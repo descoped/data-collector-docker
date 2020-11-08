@@ -128,8 +128,8 @@
 
         <dependency>
             <groupId>no.ssb.dapla.secrets</groupId>
-            <artifactId>dapla-secrets-provider-dynamic-configuration</artifactId>
-            <version>0.2.0</version>
+            <artifactId>dapla-secrets-provider-safe-configuration</artifactId>
+            <version>0.3.0</version>
         </dependency>
 
         <dependency>
