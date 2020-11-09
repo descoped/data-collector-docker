@@ -42,6 +42,7 @@ public class RecoveryContentStoreComponent implements Component {
         // we don't want double encryption
         configMap.remove("rawdata.encryption.key");
         configMap.remove("rawdata.encryption.salt");
+        configMap.put("recovery.rawdata.encryption.credentials.ignore", "true");
 
         // custom rule to ensure that producer writes that to recovery folder
         String gscRecoveryFolder = configuration.evaluateToString("local-temp-folder");
