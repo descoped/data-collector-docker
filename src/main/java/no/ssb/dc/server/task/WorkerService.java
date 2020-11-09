@@ -3,11 +3,11 @@ package no.ssb.dc.server.task;
 import no.ssb.config.DynamicConfiguration;
 import no.ssb.dc.api.content.ContentStore;
 import no.ssb.dc.api.node.builder.SpecificationBuilder;
-import no.ssb.dc.api.security.BusinessSSLResource;
 import no.ssb.dc.api.util.CommonUtils;
 import no.ssb.dc.application.health.HealthResourceFactory;
 import no.ssb.dc.application.metrics.MetricsResourceFactory;
 import no.ssb.dc.application.spi.Service;
+import no.ssb.dc.application.ssl.BusinessSSLResourceSupplier;
 import no.ssb.dc.core.executor.Worker;
 import no.ssb.dc.core.executor.WorkerObservable;
 import no.ssb.dc.core.executor.WorkerObserver;
@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public class WorkerService implements Service {
 
@@ -145,8 +144,8 @@ public class WorkerService implements Service {
                 Path certBundlesPath = configuredCertBundlesPath == null ? CommonUtils.currentPath() : Paths.get(configuredCertBundlesPath);
                 workerBuilder.buildCertificateFactory(certBundlesPath);
             } else {
-                Supplier<BusinessSSLResource> businessSSLBundleSupplier = businessSSLResourceComponent.getDelegate();
-                workerBuilder.useBusinessSSLResourceSupplier(businessSSLBundleSupplier);
+                BusinessSSLResourceSupplier businessSSLBundleSupplier = businessSSLResourceComponent.getDelegate();
+                workerBuilder.useBusinessSSLResourceSupplier(businessSSLBundleSupplier.get());
             }
 
             return workManager.run(workerBuilder).workerId.toString();
