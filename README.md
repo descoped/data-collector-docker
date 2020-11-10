@@ -13,7 +13,6 @@ cd data-collector-project
 mvn clean install
 ```
 
-
 ### Build and release docker-dev image
 
 > :bulb: To determine next version manually, check latest version at [Docker Hub](https://cloud.docker.com/u/statisticsnorway/repository/docker/statisticsnorway/data-collector/tags)
