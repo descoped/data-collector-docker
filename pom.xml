@@ -120,22 +120,12 @@
             <version>0.3</version>
         </dependency>
 
+        <!-- see api module for dapla-secrets declarations -->
         <dependency>
             <groupId>no.ssb.dapla.secrets</groupId>
-            <artifactId>dapla-secrets-client-api</artifactId>
+            <artifactId>dapla-secrets-provider-google-secret-manager</artifactId>
             <version>0.2.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>no.ssb.dapla.secrets</groupId>
-            <artifactId>dapla-secrets-provider-safe-configuration</artifactId>
-            <version>0.3.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>no.ssb.dapla.secrets</groupId>
-            <artifactId>dapla-secrets-provider-google-rest-api</artifactId>
-            <version>0.1.0</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
