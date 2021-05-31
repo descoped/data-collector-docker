@@ -11,6 +11,10 @@ resources:
   containers:
     - container: 'ubuntu_container_for_build_deply_to_nexus'
       image: 'ubuntu:latest'
+    - container: 'pubsub_container'
+      image: statisticsnorway/pubsub-emulator:latest
+      ports:
+        - 8538:8538
   repositories:
     - repository: templates
       type: github
