@@ -1,5 +1,4 @@
 name: $(Build.SourceBranch)-$(date:yyyyMMdd)$(rev:.r)
-# Pipeline triggers on any branch and tag
 trigger:
   branches:
     include:
@@ -9,6 +8,9 @@ trigger:
       - '*'
 
 resources:
+  containers:
+    - container: 'ubuntu_container_for_build_deply_to_nexus'
+      image: 'ubuntu:latest'
   repositories:
     - repository: templates
       type: github
@@ -16,17 +18,11 @@ resources:
       ref: refs/tags/1.1.22
       endpoint: statisticsnorway (6)
 
-# Pipeline will be run on this base image
 pool:
   vmImage: 'ubuntu-latest'
 
-# Variables global to this pipeline
-# https://docs.microsoft.com/en-us/azure/devops/pipelines/process/variables
 variables:
-  # Variables defined in Pipelines->Library->Variable Groups in your project in
-  # Azure Pipelines
   - group: Hemmeligheter
-  # Variables defined here
   - name: fullSha
     value: '$(Build.SourceVersion)'
   - name: imageName
@@ -38,7 +34,6 @@ variables:
   - name: MAVEN_OPTS
     value: '-Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)'
 
-
 jobs:
   - template: complete-builds/job-test-integration-coverage-build-gcr.yml@templates
     parameters:
@@ -47,6 +42,8 @@ jobs:
       repoName: $(repoName)
       artifactName: data-collector
       checkStyleRunAnalysis: false
+      mavenServices:
+        pubsub: pubsub_container
 
   - template: docker/docker-tag-for-production.yml@templates
     parameters:
