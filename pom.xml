@@ -63,31 +63,31 @@
         <dependency>
             <groupId>no.ssb.dc</groupId>
             <artifactId>data-collector-api</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.1</version>
         </dependency>
 
         <dependency>
             <groupId>no.ssb.dc</groupId>
             <artifactId>data-collector-core</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.1</version>
         </dependency>
 
         <dependency>
             <groupId>no.ssb.dc</groupId>
             <artifactId>data-collector-javascript-processor</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.1</version>
         </dependency>
 
         <dependency>
             <groupId>no.ssb.dc</groupId>
             <artifactId>data-collector-server-base</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.1</version>
         </dependency>
 
         <dependency>
             <groupId>no.ssb.dc</groupId>
             <artifactId>data-collector-connector-content-stream-rawdata</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.1</version>
         </dependency>
 
         <dependency>
@@ -198,7 +198,7 @@
         <dependency>
             <groupId>no.ssb.dc</groupId>
             <artifactId>data-collector-testutils</artifactId>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.1</version>
             <scope>test</scope>
             <exclusions>
                 <!-- caused by gcs -->
