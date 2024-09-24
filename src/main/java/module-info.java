@@ -11,7 +11,6 @@ module no.ssb.dc.server {
     requires no.ssb.rawdata.api;
     requires no.ssb.rawdata.postgres;
     requires no.ssb.rawdata.avro;
-    requires no.ssb.rawdata.kafka;
     requires dapla.secrets.client.api;
     requires dapla.secrets.provider.safe.configuration;
     requires dapla.secrets.provider.dynamic.configuration;
@@ -23,7 +22,7 @@ module no.ssb.dc.server {
     requires net.bytebuddy.agent;
     requires org.slf4j;
     requires com.fasterxml.jackson.databind;
-    requires jul_to_slf4j;
+    requires jul.to.slf4j;
     requires ch.qos.logback.classic;
     requires ch.qos.logback.core;
     requires logstash.logback.encoder;
@@ -33,7 +32,7 @@ module no.ssb.dc.server {
     requires java.net.http;
     requires undertow.core;
 
-    requires lmdbjava;
+    requires org.lmdbjava;
     requires org.objectweb.asm;
 
     opens no.ssb.dc.server;
