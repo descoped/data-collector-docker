@@ -1,0 +1,3 @@
+io.descoped.dc.server.ssl.BusinessSSLResourceComponent
+io.descoped.dc.server.content.ContentStoreComponent
+io.descoped.dc.server.recovery.RecoveryContentStoreComponent

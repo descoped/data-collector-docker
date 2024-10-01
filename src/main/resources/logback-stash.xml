@@ -10,11 +10,11 @@
         </encoder>
     </appender>
 
-    <logger name="no.ssb.dc" level="DEBUG" additivity="false">
+    <logger name="io.descoped.dc" level="DEBUG" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <logger name="no.ssb.rawdata" level="INFO" additivity="false">
+    <logger name="io.descoped.rawdata" level="INFO" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 

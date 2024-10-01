@@ -1,20 +1,20 @@
-module no.ssb.dc.server {
+module io.descoped.dc.server {
 
     requires jdk.unsupported;
 
-    requires no.ssb.service.provider.api;
-    requires no.ssb.config;
-    requires no.ssb.dc.api;
-    requires no.ssb.dc.core;
-    requires no.ssb.dc.application;
-    requires no.ssb.dc.content.rawdata;
-    requires no.ssb.rawdata.api;
-    requires no.ssb.rawdata.postgres;
-    requires no.ssb.rawdata.avro;
-    requires dapla.secrets.client.api;
-    requires dapla.secrets.provider.safe.configuration;
-    requires dapla.secrets.provider.dynamic.configuration;
-    requires dapla.secrets.provider.google.rest.api;
+    requires io.descoped.service.provider.api;
+    requires io.descoped.dynamic.config;
+    requires io.descoped.dc.api;
+    requires io.descoped.dc.core;
+    requires io.descoped.dc.application;
+    requires io.descoped.dc.content.rawdata;
+    requires io.descoped.rawdata.api;
+    requires io.descoped.rawdata.postgres;
+    requires io.descoped.rawdata.avro;
+    requires secrets.client.api;
+    requires secrets.provider.safe.configuration;
+    requires secrets.provider.dynamic.configuration;
+    requires secrets.provider.google.rest.api;
 
     requires java.instrument;
 
@@ -35,19 +35,19 @@ module no.ssb.dc.server {
     requires org.lmdbjava;
     requires org.objectweb.asm;
 
-    opens no.ssb.dc.server;
+    opens io.descoped.dc.server;
     opens worker.config;
 
-    opens no.ssb.dc.server.content to com.fasterxml.jackson.databind, org.apache.tika.core;
-    opens no.ssb.dc.server.task to com.fasterxml.jackson.databind;
-    opens no.ssb.dc.server.integrity to com.fasterxml.jackson.databind;
-    opens no.ssb.dc.server.recovery to com.fasterxml.jackson.databind;
+    opens io.descoped.dc.server.content to com.fasterxml.jackson.databind, org.apache.tika.core;
+    opens io.descoped.dc.server.task to com.fasterxml.jackson.databind;
+    opens io.descoped.dc.server.integrity to com.fasterxml.jackson.databind;
+    opens io.descoped.dc.server.recovery to com.fasterxml.jackson.databind;
 
-    exports no.ssb.dc.server;
-    exports no.ssb.dc.server.content;
-    exports no.ssb.dc.server.db;
-    exports no.ssb.dc.server.integrity;
-    exports no.ssb.dc.server.recovery;
-    exports no.ssb.dc.server.ssl;
-    exports no.ssb.dc.server.task;
+    exports io.descoped.dc.server;
+    exports io.descoped.dc.server.content;
+    exports io.descoped.dc.server.db;
+    exports io.descoped.dc.server.integrity;
+    exports io.descoped.dc.server.recovery;
+    exports io.descoped.dc.server.ssl;
+    exports io.descoped.dc.server.task;
 }

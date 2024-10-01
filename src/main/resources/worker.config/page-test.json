@@ -39,7 +39,7 @@
       "type" : "Get",
       "id" : "page",
       "url" : "${baseURL}/api/events?position=${fromPosition}&pageSize=10",
-      "positionProducerClass" : "no.ssb.dc.server.ServerTest$LongPositionProducer",
+      "positionProducerClass": "io.descoped.dc.server.ServerTest$LongPositionProducer",
       "returnVariables" : [ "nextPosition" ],
       "responseValidators" : [ {
         "type" : "HttpStatusValidation",

@@ -1,4 +1,0 @@
-no.ssb.dc.server.task.WorkerService
-no.ssb.dc.server.content.RawdataFileSystemService
-no.ssb.dc.server.integrity.IntegrityCheckService
-no.ssb.dc.server.recovery.RecoveryService

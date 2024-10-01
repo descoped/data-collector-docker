@@ -1,0 +1,3 @@
+io.descoped.dc.server.task.TaskController
+io.descoped.dc.server.integrity.IntegrityCheckController
+io.descoped.dc.server.recovery.RecoveryController

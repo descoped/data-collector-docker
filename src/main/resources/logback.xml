@@ -10,8 +10,8 @@
         </encoder>
     </appender>
 
-    <logger name="no.ssb.dc" level="DEBUG"/>
-    <logger name="no.ssb.rawdata" level="INFO"/>
+    <logger name="io.descoped.dc" level="DEBUG"/>
+    <logger name="io.descoped.rawdata" level="INFO"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
