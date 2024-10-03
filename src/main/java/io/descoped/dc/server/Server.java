@@ -1,6 +1,5 @@
 package io.descoped.dc.server;
 
-import ch.qos.logback.classic.ClassicConstants;
 import io.descoped.config.StoreBasedDynamicConfiguration;
 import io.descoped.dc.application.server.UndertowApplication;
 import io.descoped.dc.application.ssl.BusinessSSLResourceSupplier;
@@ -25,7 +24,7 @@ public class Server {
 
         String logbackConfigurationFile = System.getenv("LOGBACK_CONFIGURATION_FILE");
         if (logbackConfigurationFile != null) {
-            System.setProperty(ClassicConstants.CONFIG_FILE_PROPERTY, logbackConfigurationFile);
+            System.setProperty("log4j.configurationFile", logbackConfigurationFile);
         }
         JavaUtilLoggerBridge.installJavaUtilLoggerBridgeHandler();
         if (logbackConfigurationFile != null) {

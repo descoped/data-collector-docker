@@ -106,6 +106,7 @@ rawdata.encryption.salt = (encryptionSalt | secretName)
 
 ### Logstash
 
-Set environment variable `LOGBACK_CONFIGURATION_FILE=/opt/dc/logback-stash.xml` to enable structured logging using Logstash.
+Set environment variable `LOGBACK_CONFIGURATION_FILE=/opt/dc/log4j2-logstash.xml` to enable structured logging using
+Logstash.
 
 .
