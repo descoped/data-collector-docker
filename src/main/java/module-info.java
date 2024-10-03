@@ -11,21 +11,18 @@ module io.descoped.dc.server {
     requires io.descoped.rawdata.api;
     requires io.descoped.rawdata.postgres;
     requires io.descoped.rawdata.avro;
-    requires secrets.client.api;
-    requires secrets.provider.safe.configuration;
-    requires secrets.provider.dynamic.configuration;
-    requires secrets.provider.google.rest.api;
+    requires io.descoped.secrets.client.api;
+    requires io.descoped.secrets.provider.safe.configuration;
+    requires io.descoped.secrets.provider.dynamic.configuration;
+    requires io.descoped.secrets.provider.google.rest.api;
 
     requires java.instrument;
 
     requires net.bytebuddy;
     requires net.bytebuddy.agent;
     requires org.slf4j;
-    requires com.fasterxml.jackson.databind;
     requires jul.to.slf4j;
-    requires ch.qos.logback.classic;
-    requires ch.qos.logback.core;
-    requires logstash.logback.encoder;
+    requires com.fasterxml.jackson.databind;
     requires io.github.classgraph;
     requires org.apache.tika.core;
 

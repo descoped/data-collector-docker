@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="0">
+    <Properties>
+        <Property name="TEST_LOG_LEVEL">DEBUG</Property>
+        <Property name="ROOT_LOG_LEVEL">INFO</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <JsonLayout complete="false" compact="true" eventEol="true" includeMDC="true" includeTimeMillis="true">
+                <KeyValuePair key="timeZone" value="UTC"/>
+            </JsonLayout>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="io.descoped.dc" level="${sys:log4j2.level:-${env:LOG4J_LEVEL:-${TEST_LOG_LEVEL}}}"
+                additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <Logger name="io.descoped.rawdata" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+
+        <Root level="${sys:log4j2.level:-${env:LOG4J_LEVEL:-${ROOT_LOG_LEVEL}}}">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
