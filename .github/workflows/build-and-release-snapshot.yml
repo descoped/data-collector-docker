@@ -51,7 +51,7 @@ jobs:
         run: |
           mvn --batch-mode --no-transfer-progress deploy \
             -DskipTests \
-            -P oss-sonatype
+            -P ossrh-snapshot
 
       - name: Notify on success
         if: success()

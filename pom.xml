@@ -7,8 +7,8 @@
     <version>2.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Data Collector Docker</name>
-    <description>Data Collector Docker</description>
+    <name>Data Collector Server</name>
+    <description>Data Collector Server</description>
     <url>https://github.com/descoped/</url>
     <inceptionYear>2019</inceptionYear>
 
@@ -49,17 +49,6 @@
         <url>https://github.com/descoped/data-collector-docker/tree/master</url>
         <tag>HEAD</tag>
     </scm>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <dependencies>
         <dependency>
@@ -207,7 +196,13 @@
 
     <profiles>
         <profile>
-            <id>oss-sonatype</id>
+            <id>ossrh-snapshot</id>
+            <distributionManagement>
+                <snapshotRepository>
+                    <id>ossrh</id>
+                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+                </snapshotRepository>
+            </distributionManagement>
             <build>
                 <plugins>
                     <plugin>
@@ -223,7 +218,13 @@
         </profile>
 
         <profile>
-            <id>oss-maven-central</id>
+            <id>ossrh-release</id>
+            <distributionManagement>
+                <repository>
+                    <id>ossrh</id>
+                    <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+            </distributionManagement>
             <build>
                 <plugins>
                     <plugin>
